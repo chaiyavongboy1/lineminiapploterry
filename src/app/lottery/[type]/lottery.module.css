@@ -1,0 +1,337 @@
+.linesSelector {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 4px 0;
+  margin-bottom: 20px;
+  scrollbar-width: none;
+}
+
+.linesSelector::-webkit-scrollbar {
+  display: none;
+}
+
+.linesOption {
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  color: var(--text-muted);
+  border: 1.5px solid rgba(74, 158, 255, 0.10);
+  flex-shrink: 0;
+}
+
+.linesOption:hover {
+  border-color: rgba(74, 158, 255, 0.25);
+  color: var(--text);
+}
+
+.linesOptionActive {
+  composes: linesOption;
+  background: var(--grad-primary);
+  color: #fff;
+  border-color: transparent;
+  box-shadow: var(--shadow-blue);
+}
+
+/* Line Card */
+.lineCard {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  border: 1.5px solid rgba(74, 158, 255, 0.10);
+  border-radius: 16px;
+  padding: 14px;
+  transition: border-color 0.2s ease;
+}
+
+.lineCard:hover {
+  border-color: rgba(74, 158, 255, 0.22);
+}
+
+.lineCardComplete {
+  composes: lineCard;
+  border-color: rgba(34, 201, 112, 0.25);
+  box-shadow: 0 0 8px rgba(34, 201, 112, 0.12);
+  background: rgba(240, 253, 246, 0.8);
+}
+
+.lineCardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(74, 158, 255, 0.06);
+}
+
+.lineCardTitle {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.lineCardActions {
+  display: flex;
+  gap: 6px;
+}
+
+.lineCardBtn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1.5px solid rgba(74, 158, 255, 0.12);
+  background: transparent;
+  color: var(--text-muted);
+  transition: all 0.2s ease;
+}
+
+.lineCardBtn:hover {
+  border-color: rgba(74, 158, 255, 0.25);
+  color: var(--text);
+  background: rgba(74, 158, 255, 0.05);
+}
+
+.lineCardBtnQp {
+  composes: lineCardBtn;
+  border-color: rgba(240, 180, 41, 0.25);
+  color: var(--amber-600);
+}
+
+.lineCardBtnQp:hover {
+  background: rgba(240, 180, 41, 0.08);
+}
+
+.lineCardBtnClear {
+  composes: lineCardBtn;
+}
+
+.lineCardBtnClear:hover {
+  border-color: rgba(240, 96, 112, 0.25);
+  color: var(--rose-500);
+  background: rgba(240, 96, 112, 0.05);
+}
+
+/* Grid Label Row */
+.gridLabelRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+/* Grid Label */
+.gridLabel {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+/* Section QP Button (Main Numbers) */
+.qpSectionBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  border: 1.5px solid rgba(74, 158, 255, 0.18);
+  background: rgba(74, 158, 255, 0.06);
+  color: var(--blue-600);
+  transition: all 0.2s ease;
+}
+
+.qpSectionBtn:hover {
+  background: rgba(74, 158, 255, 0.14);
+  box-shadow: 0 1px 4px rgba(74, 158, 255, 0.15);
+}
+
+/* Section QP Button (Special Number) */
+.qpSectionBtnSpecial {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  border: 1.5px solid rgba(240, 180, 41, 0.22);
+  background: rgba(240, 180, 41, 0.06);
+  color: var(--amber-600);
+  transition: all 0.2s ease;
+}
+
+.qpSectionBtnSpecial:hover {
+  background: rgba(240, 180, 41, 0.14);
+  box-shadow: 0 1px 4px rgba(240, 180, 41, 0.15);
+}
+
+/* Compact Number Grid */
+.numberGridCompact {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 3px;
+}
+
+/* Number Cell */
+.numberCell {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  border-radius: 8px;
+  border: 1.5px solid rgba(74, 158, 255, 0.10);
+  background: rgba(255, 255, 255, 0.8);
+  color: var(--text-muted);
+  transition: all 0.15s ease;
+  user-select: none;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.numberCell:hover {
+  border-color: rgba(74, 158, 255, 0.28);
+  color: var(--blue-600);
+  background: rgba(224, 239, 255, 0.6);
+}
+
+.numberCell:active {
+  transform: scale(0.92);
+}
+
+.numberCellSelected {
+  composes: numberCell;
+  background: var(--grad-primary);
+  color: #fff;
+  border-color: transparent;
+  box-shadow: 0 2px 8px rgba(74, 158, 255, 0.30);
+  transform: scale(1.05);
+}
+
+.numberCellSelected:active {
+  transform: scale(0.98);
+}
+
+/* Special Number Cell */
+.numberCellSpecial {
+  composes: numberCell;
+}
+
+.numberCellSpecial:hover {
+  border-color: rgba(240, 180, 41, 0.28);
+  background: rgba(255, 248, 219, 0.6);
+  color: var(--amber-600);
+}
+
+.numberCellSpecialSelected {
+  composes: numberCell;
+  background: var(--grad-accent);
+  color: #fff;
+  border-color: transparent;
+  box-shadow: 0 2px 8px rgba(240, 180, 41, 0.30);
+  transform: scale(1.05);
+}
+
+.numberCellSpecialSelected:active {
+  transform: scale(0.98);
+}
+
+.gridSeparator {
+  border: none;
+  border-top: 1px dashed rgba(74, 158, 255, 0.10);
+  margin: 10px 0;
+}
+
+/* Lines Grid */
+.linesGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+@media (min-width: 380px) {
+  .linesGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 640px) {
+  .linesGrid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* Sticky Summary — Above bottom nav */
+.stickySummary {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  max-width: 480px;
+  margin: 0 auto;
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(24px) saturate(1.4);
+  -webkit-backdrop-filter: blur(24px) saturate(1.4);
+  border-top: 1.5px solid rgba(74, 158, 255, 0.10);
+  padding: 14px 16px calc(14px + env(safe-area-inset-bottom, 0px));
+  z-index: 60;
+  box-shadow: 0 -8px 30px rgba(74, 158, 255, 0.08);
+}
+
+/* Quick Pick All Button */
+.qpAllBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px;
+  border-radius: 14px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  border: 2px dashed rgba(240, 180, 41, 0.30);
+  background: rgba(255, 248, 219, 0.4);
+  color: var(--amber-600);
+  transition: all 0.2s ease;
+  margin-bottom: 16px;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.qpAllBtn:hover {
+  background: rgba(255, 248, 219, 0.7);
+  border-style: solid;
+}
+
+.qpAllBtn:active {
+  transform: scale(0.98);
+}
+
+@media (max-width: 480px) {
+  .numberGridCompact {
+    grid-template-columns: repeat(7, 1fr);
+    gap: 2px;
+  }
+  .numberCell {
+    font-size: 11px;
+    border-radius: 6px;
+  }
+}

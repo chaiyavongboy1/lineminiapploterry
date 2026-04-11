@@ -1,0 +1,12 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/fetch-results?type=powerball",
+      "schedule": "0 4 * * 2,4,0"
+    },
+    {
+      "path": "/api/cron/fetch-results?type=megamillions",
+      "schedule": "30 4 * * 3,6"
+    }
+  ]
+}
