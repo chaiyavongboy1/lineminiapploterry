@@ -20,14 +20,6 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
                 return;
             }
 
-            // Dev Bypass: skip Supabase admin check
-            if (process.env.NEXT_PUBLIC_DEV_BYPASS_AUTH === 'true') {
-                console.warn('🔓 Dev Bypass — granting admin access');
-                setIsAdmin(true);
-                setChecking(false);
-                return;
-            }
-
             try {
                 const supabase = createClient();
                 const { data } = await supabase

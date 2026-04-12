@@ -17,10 +17,6 @@ export async function POST(request: NextRequest) {
 
         const supabase = createServerClient();
 
-        // Determine role: DEV_ADMIN gets admin role in dev bypass mode
-        const isDevAdmin =
-            process.env.NEXT_PUBLIC_DEV_BYPASS_AUTH === 'true' && userId === 'DEV_ADMIN';
-
         // Upsert user
         const { data, error } = await supabase
             .from('users')
@@ -30,7 +26,6 @@ export async function POST(request: NextRequest) {
                     display_name: displayName || null,
                     picture_url: pictureUrl || null,
                     status_message: statusMessage || null,
-                    ...(isDevAdmin ? { role: 'admin' } : {}),
                     updated_at: new Date().toISOString(),
                 },
                 { onConflict: 'line_user_id' }

@@ -39,27 +39,6 @@ function getDrawDaysLabel(drawDays: string[]): string {
     return drawDays.map(d => dayLabels[d.toLowerCase()] || d).join(', ');
 }
 
-const MOCK_LOTTERY_TYPES: LotteryType[] = [
-    {
-        id: 'powerball', name: 'Powerball',
-        description: 'American Powerball — เลือก 5 ตัวเลขจาก 1-69 และ Powerball 1 ตัวจาก 1-26',
-        price_per_line: 250, service_fee: 50, max_number: 69, max_special_number: 26,
-        numbers_to_pick: 5, special_numbers_to_pick: 1,
-        draw_days: ['monday', 'wednesday', 'saturday'],
-        next_draw_date: null, estimated_jackpot: '$500 Million',
-        is_active: true, image_url: null, created_at: new Date().toISOString(),
-    },
-    {
-        id: 'megamillions', name: 'Mega Millions',
-        description: 'Mega Millions — เลือก 5 ตัวเลขจาก 1-70 และ Mega Ball 1 ตัวจาก 1-24',
-        price_per_line: 250, service_fee: 50, max_number: 70, max_special_number: 24,
-        numbers_to_pick: 5, special_numbers_to_pick: 1,
-        draw_days: ['tuesday', 'friday'],
-        next_draw_date: null, estimated_jackpot: '$400 Million',
-        is_active: true, image_url: null, created_at: new Date().toISOString(),
-    },
-];
-
 /* ── CMS Content Preview ── */
 function ContentSectionsPreview() {
     const [sections, setSections] = useState<ContentSection[]>([]);
@@ -162,9 +141,8 @@ export default function HomePage() {
                 const supabase = createClient();
                 const { data } = await supabase.from('lottery_types').select('*').eq('is_active', true).order('created_at', { ascending: true });
                 if (data && data.length > 0) setLotteryTypes(data as LotteryType[]);
-                else if (process.env.NEXT_PUBLIC_DEV_BYPASS_AUTH === 'true') setLotteryTypes(MOCK_LOTTERY_TYPES);
-            } catch {
-                if (process.env.NEXT_PUBLIC_DEV_BYPASS_AUTH === 'true') setLotteryTypes(MOCK_LOTTERY_TYPES);
+            } catch (err) {
+                console.error('Failed to fetch lottery types:', err);
             } finally { setLoading(false); }
         }
         fetchLotteryTypes();

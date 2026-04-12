@@ -22,74 +22,6 @@ function createEmptyLines(count: number): NumberSelection[] {
     }));
 }
 
-const MOCK_LOTTERY_TYPES: Record<string, LotteryType> = {
-    'powerball': {
-        id: 'powerball',
-        name: 'Powerball',
-        description: 'เลือก 5 ตัวเลขจาก 1-69 และ Powerball 1 ตัวจาก 1-26',
-        price_per_line: 250,
-        service_fee: 50,
-        max_number: 69,
-        max_special_number: 26,
-        numbers_to_pick: 5,
-        special_numbers_to_pick: 1,
-        draw_days: ['monday', 'wednesday', 'saturday'],
-        next_draw_date: null,
-        estimated_jackpot: '$500 Million',
-        is_active: true,
-        image_url: null,
-        created_at: new Date().toISOString(),
-    },
-    'megamillions': {
-        id: 'megamillions',
-        name: 'Mega Millions',
-        description: 'เลือก 5 ตัวเลขจาก 1-70 และ Mega Ball 1 ตัวจาก 1-24',
-        price_per_line: 250,
-        service_fee: 50,
-        max_number: 70,
-        max_special_number: 24,
-        numbers_to_pick: 5,
-        special_numbers_to_pick: 1,
-        draw_days: ['tuesday', 'friday'],
-        next_draw_date: null,
-        estimated_jackpot: '$400 Million',
-        is_active: true,
-        image_url: null,
-        created_at: new Date().toISOString(),
-    },
-};
-
-function findMockLottery(typeParam: string): LotteryType | null {
-    // First, try admin-configured lottery types from localStorage
-    try {
-        const stored = localStorage.getItem('admin_lottery_types');
-        if (stored) {
-            const adminTypes: LotteryType[] = JSON.parse(stored).map((t: LotteryType) => {
-                // Fix: Mega Ball should be 1-24
-                if ((t.id === 'mega-millions' || t.id === 'megamillions') && t.max_special_number === 25) {
-                    return { ...t, max_special_number: 24 };
-                }
-                return t;
-            });
-            // Match by id or by name (slug)
-            const found = adminTypes.find(lt =>
-                lt.id === typeParam ||
-                lt.name.toLowerCase().replace(/\s+/g, '') === typeParam.toLowerCase().replace(/\s+/g, '') ||
-                typeParam.toLowerCase().includes(lt.id.toLowerCase())
-            );
-            if (found) return found;
-        }
-    } catch {
-        // ignore
-    }
-
-    // Fallback: hardcoded mock data
-    if (MOCK_LOTTERY_TYPES[typeParam]) return MOCK_LOTTERY_TYPES[typeParam];
-    const key = Object.keys(MOCK_LOTTERY_TYPES).find(k => typeParam.toLowerCase().includes(k));
-    if (key) return MOCK_LOTTERY_TYPES[key];
-    return MOCK_LOTTERY_TYPES['powerball'];
-}
-
 export default function LotteryPage() {
     const params = useParams();
     const router = useRouter();
@@ -114,24 +46,9 @@ export default function LotteryPage() {
                 if (data) {
                     setLottery(data as LotteryType);
                     setSelections(createEmptyLines(lineCount));
-                } else if (process.env.NEXT_PUBLIC_DEV_BYPASS_AUTH === 'true') {
-                    // Fallback to mock data in dev mode
-                    const mock = findMockLottery(params.type as string);
-                    if (mock) {
-                        setLottery(mock);
-                        setSelections(createEmptyLines(lineCount));
-                    }
                 }
             } catch (err) {
                 console.error('Failed to fetch lottery:', err);
-                // Fallback to mock data in dev mode
-                if (process.env.NEXT_PUBLIC_DEV_BYPASS_AUTH === 'true') {
-                    const mock = findMockLottery(params.type as string);
-                    if (mock) {
-                        setLottery(mock);
-                        setSelections(createEmptyLines(lineCount));
-                    }
-                }
             } finally {
                 setLoading(false);
             }

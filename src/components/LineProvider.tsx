@@ -40,30 +40,10 @@ export function LineProvider({ children }: LineProviderProps) {
     useEffect(() => {
         const initMiniApp = async () => {
             try {
-                // Dev Bypass Mode: skip LIFF and use fake admin profile
-                if (process.env.NEXT_PUBLIC_DEV_BYPASS_AUTH === 'true') {
-                    console.warn('🔓 Dev Bypass Auth enabled — skipping LINE login');
-                    const devProfile = {
-                        userId: 'DEV_ADMIN',
-                        displayName: 'Dev Admin',
-                        pictureUrl: undefined,
-                        statusMessage: 'Development Mode',
-                    };
-                    setProfile(devProfile);
-                    setIsLoggedIn(true);
-                    setIsReady(true); // Set ready immediately — don't block on upsert
-                    // Upsert dev user in background (fire and forget)
-                    fetch('/api/auth/line', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(devProfile),
-                    }).catch(err => console.warn('Failed to upsert dev user:', err));
-                    return;
-                }
-
                 const liffId = process.env.NEXT_PUBLIC_LINE_MINI_APP_ID;
                 if (!liffId) {
-                    console.warn('LINE Mini App ID not set — running in dev mode');
+                    console.error('NEXT_PUBLIC_LINE_MINI_APP_ID is not set');
+                    setError('LINE Mini App ID not configured');
                     setIsReady(true);
                     return;
                 }
