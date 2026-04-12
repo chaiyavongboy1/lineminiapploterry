@@ -21,8 +21,15 @@ interface ResultItem {
     order_number: string;
 }
 
-// Tax threshold: $50,000
-const TAX_THRESHOLD = 50000;
+// Determine if a prize tier is taxable based on lottery type and tier
+// Powerball: Tier 1 (Jackpot), Tier 2 (5 Match), Tier 3 (4+PB) → taxable
+// Mega Millions: Tier 1 (Jackpot), Tier 2 (5 Match) → taxable
+function isTaxablePrize(lotteryName: string, tierOrder: number | undefined): boolean {
+    if (!tierOrder) return false;
+    if (lotteryName === 'Powerball') return tierOrder <= 3;
+    if (lotteryName === 'Mega Millions') return tierOrder <= 2;
+    return false;
+}
 
 export default function MyResultsPage() {
     const { profile, isLoggedIn, isReady } = useLine();
@@ -158,8 +165,15 @@ export default function MyResultsPage() {
                         const totalPrize = result.order_line_results.reduce(
                             (sum, r) => sum + (r.prize_amount || 0), 0
                         );
-                        const showTax = totalPrize >= TAX_THRESHOLD;
                         const lotteryName = result.draw_result.lottery_type?.name || '';
+                        // Check if any line result in this group is taxable
+                        const taxableLines = result.order_line_results.filter(r => {
+                            const tierOrder = (r.prize_tier as any)?.tier_order;
+                            return isTaxablePrize(lotteryName, tierOrder);
+                        });
+                        const hasTaxableWin = taxableLines.length > 0;
+                        const taxablePrizeTotal = taxableLines.reduce((sum, r) => sum + (r.prize_amount || 0), 0);
+                        const nonTaxablePrizeTotal = totalPrize - taxablePrizeTotal;
 
                         return (
                             <div
@@ -319,11 +333,11 @@ export default function MyResultsPage() {
                                             </div>
                                         ))}
 
-                                        {/* Tax & Currency Section — only if >= $50,000 */}
-                                        {showTax && (
+                                        {/* Tax & Currency Section */}
+                                        {(hasTaxableWin || exchangeRate > 0) && (
                                             <div style={{
-                                                background: 'rgba(239, 68, 68, 0.06)',
-                                                border: '1px solid rgba(239, 68, 68, 0.15)',
+                                                background: hasTaxableWin ? 'rgba(239, 68, 68, 0.06)' : 'rgba(59,130,246,0.06)',
+                                                border: `1px solid ${hasTaxableWin ? 'rgba(239, 68, 68, 0.15)' : 'rgba(59,130,246,0.15)'}`,
                                                 borderRadius: 10,
                                                 padding: '12px',
                                                 marginTop: 8,
@@ -336,8 +350,8 @@ export default function MyResultsPage() {
                                                     alignItems: 'center',
                                                     gap: 6,
                                                 }}>
-                                                    <FileText size={14} color="var(--danger)" />
-                                                    ข้อมูลภาษี & สกุลเงิน
+                                                    <FileText size={14} color={hasTaxableWin ? 'var(--danger)' : 'var(--primary)'} />
+                                                    {hasTaxableWin ? 'ข้อมูลภาษี & สกุลเงิน' : 'ข้อมูลสกุลเงิน'}
                                                 </p>
 
                                                 <div style={{
@@ -350,21 +364,7 @@ export default function MyResultsPage() {
                                                     <span style={{ fontWeight: 600 }}>${totalPrize.toLocaleString()}</span>
                                                 </div>
 
-                                                {taxRate > 0 && (
-                                                    <div style={{
-                                                        display: 'flex',
-                                                        justifyContent: 'space-between',
-                                                        fontSize: 12,
-                                                        marginBottom: 4,
-                                                    }}>
-                                                        <span style={{ color: 'var(--text-muted)' }}>ภาษี ({taxRate}%)</span>
-                                                        <span style={{ fontWeight: 600, color: 'var(--danger)' }}>
-                                                            -${(totalPrize * taxRate / 100).toLocaleString()}
-                                                        </span>
-                                                    </div>
-                                                )}
-
-                                                {exchangeRate > 0 && (
+                                                {hasTaxableWin && taxRate > 0 && (
                                                     <>
                                                         <div style={{
                                                             display: 'flex',
@@ -372,31 +372,63 @@ export default function MyResultsPage() {
                                                             fontSize: 12,
                                                             marginBottom: 4,
                                                         }}>
-                                                            <span style={{ color: 'var(--text-muted)' }}>อัตราแลกเปลี่ยน</span>
-                                                            <span style={{ fontWeight: 600 }}>1 USD = {exchangeRate} THB</span>
+                                                            <span style={{ color: 'var(--text-muted)' }}>ส่วนที่เสียภาษี</span>
+                                                            <span style={{ fontWeight: 600 }}>${taxablePrizeTotal.toLocaleString()}</span>
                                                         </div>
-                                                        <div className="divider" style={{ margin: '8px 0' }} />
                                                         <div style={{
                                                             display: 'flex',
                                                             justifyContent: 'space-between',
-                                                            fontSize: 13,
+                                                            fontSize: 12,
+                                                            marginBottom: 4,
                                                         }}>
-                                                            <span style={{ fontWeight: 600 }}>ยอดรับ (โดยประมาณ)</span>
-                                                            <span style={{ fontWeight: 700, color: 'var(--success)' }}>
-                                                                ฿{((totalPrize * (1 - taxRate / 100)) * exchangeRate).toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                                                            <span style={{ color: 'var(--text-muted)' }}>ภาษี ({taxRate}%)</span>
+                                                            <span style={{ fontWeight: 600, color: 'var(--danger)' }}>
+                                                                -${(taxablePrizeTotal * taxRate / 100).toLocaleString()}
                                                             </span>
                                                         </div>
                                                     </>
                                                 )}
 
-                                                <p style={{
-                                                    fontSize: 10,
-                                                    color: 'var(--text-muted)',
-                                                    marginTop: 8,
-                                                    lineHeight: 1.4,
-                                                }}>
-                                                    ⚠️ จำนวนเงินที่แสดงเป็นการประมาณการเท่านั้น ภาษีจริงอาจแตกต่างขึ้นอยู่กับกฎหมายที่เกี่ยวข้อง
-                                                </p>
+                                                {exchangeRate > 0 && (() => {
+                                                    const taxDeduct = hasTaxableWin && taxRate > 0 ? (taxablePrizeTotal * taxRate / 100) : 0;
+                                                    const netTotal = totalPrize - taxDeduct;
+                                                    const thbAmount = netTotal * exchangeRate;
+                                                    return (
+                                                        <>
+                                                            <div style={{
+                                                                display: 'flex',
+                                                                justifyContent: 'space-between',
+                                                                fontSize: 12,
+                                                                marginBottom: 4,
+                                                            }}>
+                                                                <span style={{ color: 'var(--text-muted)' }}>อัตราแลกเปลี่ยน</span>
+                                                                <span style={{ fontWeight: 600 }}>1 USD = {exchangeRate} THB</span>
+                                                            </div>
+                                                            <div className="divider" style={{ margin: '8px 0' }} />
+                                                            <div style={{
+                                                                display: 'flex',
+                                                                justifyContent: 'space-between',
+                                                                fontSize: 13,
+                                                            }}>
+                                                                <span style={{ fontWeight: 600 }}>ยอดรับ (โดยประมาณ)</span>
+                                                                <span style={{ fontWeight: 700, color: 'var(--success)' }}>
+                                                                    ฿{thbAmount.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                                                                </span>
+                                                            </div>
+                                                        </>
+                                                    );
+                                                })()}
+
+                                                {hasTaxableWin && (
+                                                    <p style={{
+                                                        fontSize: 10,
+                                                        color: 'var(--text-muted)',
+                                                        marginTop: 8,
+                                                        lineHeight: 1.4,
+                                                    }}>
+                                                        ⚠️ ภาษีหักเฉพาะรางวัลขั้นสูง ตามกฎของ {lotteryName} จำนวนเงินที่แสดงเป็นการประมาณการเท่านั้น
+                                                    </p>
+                                                )}
                                             </div>
                                         )}
 

@@ -10,6 +10,7 @@ import {
     CheckCircle, Loader2, Ticket, History
 } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
+import { useImageUpload } from '@/hooks/useImageUpload';
 
 interface CheckoutLine {
     lineNumber: number;
@@ -45,8 +46,7 @@ function CheckoutContent() {
     const [data, setData] = useState<CheckoutData | null>(null);
     const [settings, setSettings] = useState<PaymentSettings | null>(null);
     const [copied, setCopied] = useState(false);
-    const [slipFile, setSlipFile] = useState<File | null>(null);
-    const [slipPreview, setSlipPreview] = useState<string | null>(null);
+    const slipUpload = useImageUpload({ maxSizeMB: 1, maxWidthPx: 1920 });
     const [submitting, setSubmitting] = useState(false);
     const [orderId, setOrderId] = useState('');
     const [orderNumber, setOrderNumber] = useState('');
@@ -120,18 +120,9 @@ function CheckoutContent() {
         setTimeout(() => setCopied(false), 2000);
     };
 
-    const handleSlipChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (file) {
-            setSlipFile(file);
-            const reader = new FileReader();
-            reader.onload = () => setSlipPreview(reader.result as string);
-            reader.readAsDataURL(file);
-        }
-    };
 
     const handleConfirmSlip = async () => {
-        if (!slipFile || !data) return;
+        if (!slipUpload.file || !data) return;
         setSubmitting(true);
 
         try {
@@ -163,7 +154,7 @@ function CheckoutContent() {
             // Step 2: Upload payment slip
             const formData = new FormData();
             formData.append('orderId', createdOrder.id);
-            formData.append('slip', slipFile);
+            formData.append('slip', slipUpload.file!);
             formData.append('amount', String(totalAmount));
             formData.append('bankName', settings?.bankName || '');
 
@@ -443,21 +434,26 @@ function CheckoutContent() {
 
                 {/* Upload Area */}
                 <div
-                    className={`upload-area ${slipPreview ? 'active' : ''}`}
-                    style={{ marginBottom: 16 }}
-                    onClick={() => fileInputRef.current?.click()}
+                    className={`upload-area ${slipUpload.preview ? 'active' : ''}`}
+                    style={{ marginBottom: 16, cursor: slipUpload.isCompressing ? 'wait' : 'pointer' }}
+                    onClick={() => !slipUpload.isCompressing && fileInputRef.current?.click()}
                 >
                     <input
                         ref={fileInputRef}
                         type="file"
-                        accept="image/*"
-                        onChange={handleSlipChange}
+                        accept="image/jpeg,image/png,image/webp"
+                        onChange={slipUpload.onInputChange}
                         style={{ display: 'none' }}
                     />
 
-                    {slipPreview ? (
+                    {slipUpload.isCompressing ? (
+                        <>
+                            <Loader2 size={36} color="var(--primary)" style={{ animation: 'spin 1s linear infinite', marginBottom: 8 }} />
+                            <p style={{ fontWeight: 600, fontSize: 14, color: 'var(--primary)' }}>กำลังปรับขนาดรูป...</p>
+                        </>
+                    ) : slipUpload.preview ? (
                         <div className="slip-preview" style={{ margin: '0 auto' }}>
-                            <img src={slipPreview} alt="slip preview" />
+                            <img src={slipUpload.preview} alt="slip preview" />
                         </div>
                     ) : (
                         <>
@@ -468,13 +464,25 @@ function CheckoutContent() {
                                 แตะเพื่อเลือกรูปสลิป
                             </p>
                             <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>
-                                รองรับ JPG, PNG (สูงสุด 10MB)
+                                รองรับ JPG, PNG, WEBP (สูงสุด 15MB — ระบบจะปรับขนาดอัตโนมัติ)
                             </p>
                         </>
                     )}
                 </div>
 
-                {slipPreview && (
+                {slipUpload.error && (
+                    <div style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)', borderRadius: 10, padding: '10px 14px', marginBottom: 12, fontSize: 13, color: 'var(--danger)' }}>
+                        ⚠️ {slipUpload.error}
+                    </div>
+                )}
+
+                {slipUpload.sizeHint && (
+                    <div style={{ fontSize: 12, color: 'var(--text-muted)', textAlign: 'center', marginBottom: 10 }}>
+                        📦 {slipUpload.sizeHint}
+                    </div>
+                )}
+
+                {slipUpload.preview && (
                     <button
                         className="btn btn-outline btn-full"
                         style={{ marginBottom: 16, fontSize: 13 }}
@@ -490,7 +498,7 @@ function CheckoutContent() {
                     className="btn btn-success btn-full"
                     style={{ padding: '14px 24px', fontSize: 16, marginBottom: 24 }}
                     onClick={handleConfirmSlip}
-                    disabled={!slipFile || submitting}
+                    disabled={!slipUpload.file || submitting || slipUpload.isCompressing}
                 >
                     {submitting ? (
                         <>

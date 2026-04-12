@@ -49,7 +49,7 @@ export async function GET(request: NextRequest) {
                     *,
                     lottery_type:lottery_types(name, id)
                 ),
-                prize_tier:prize_tiers(prize_name)
+                prize_tier:prize_tiers(prize_name, tier_order)
             `)
             .eq('is_winner', true)
             // Fix: we must filter the inner join for orders to only match this specific user_id

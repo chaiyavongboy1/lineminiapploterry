@@ -8,6 +8,7 @@ import { ORDER_STATUS_LABELS } from '@/types';
 import type { Order, OrderStatus } from '@/types';
 import { ArrowLeft, CheckCircle, XCircle, Loader2, Camera, Upload, Package } from 'lucide-react';
 import Link from 'next/link';
+import { compressImage, validateImageFile } from '@/lib/image-compress';
 
 const statusBadgeClass: Record<OrderStatus, string> = {
     pending_payment: 'badge-pending',
@@ -31,6 +32,7 @@ export default function AdminOrderDetailPage() {
     const [adminNote, setAdminNote] = useState('');
     const [ticketPreviews, setTicketPreviews] = useState<string[]>([]);
     const [ticketFiles, setTicketFiles] = useState<File[]>([]);
+    const [isCompressingTickets, setIsCompressingTickets] = useState(false);
 
     useEffect(() => {
         // Don't run until LINE profile is ready
@@ -118,15 +120,25 @@ export default function AdminOrderDetailPage() {
         }
     };
 
-    const handleTicketUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleTicketUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = Array.from(e.target.files || []);
-        if (files.length > 0) {
-            setTicketFiles(prev => [...prev, ...files]);
-            files.forEach(file => {
-                const reader = new FileReader();
-                reader.onload = () => setTicketPreviews(prev => [...prev, reader.result as string]);
-                reader.readAsDataURL(file);
-            });
+        if (files.length === 0) return;
+
+        setIsCompressingTickets(true);
+        try {
+            const compressed: File[] = [];
+            for (const file of files) {
+                const err = validateImageFile(file);
+                if (err) { alert(err); continue; }
+                const result = await compressImage(file, { maxSizeMB: 1, maxWidthPx: 1920 });
+                compressed.push(result.file);
+            }
+            setTicketFiles(prev => [...prev, ...compressed]);
+            setTicketPreviews(prev => [...prev, ...compressed.map(f => f.name)]);
+        } finally {
+            setIsCompressingTickets(false);
+            // reset input so same file can be re-selected
+            e.target.value = '';
         }
     };
 
@@ -425,25 +437,34 @@ export default function AdminOrderDetailPage() {
 
                     {/* Multi-Ticket Upload */}
                     <div
-                        onClick={() => ticketInputRef.current?.click()}
+                        onClick={() => !isCompressingTickets && ticketInputRef.current?.click()}
                         className="upload-area"
-                        style={{ marginBottom: 12 }}
+                        style={{ marginBottom: 12, cursor: isCompressingTickets ? 'wait' : 'pointer' }}
                     >
                         <input
                             ref={ticketInputRef}
                             type="file"
-                            accept="image/*"
+                            accept="image/jpeg,image/png,image/webp"
                             multiple
                             onChange={handleTicketUpload}
                             style={{ display: 'none' }}
                         />
-                        <Camera size={32} color="var(--text-muted)" style={{ marginBottom: 8 }} />
-                        <p style={{ fontWeight: 600, fontSize: 14, marginBottom: 4 }}>
-                            📸 แตะเพื่อแนบรูป Lottery (หลายรูปได้)
-                        </p>
-                        <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-                            เลือกได้หลายรูปพร้อมกัน
-                        </p>
+                        {isCompressingTickets ? (
+                            <>
+                                <Loader2 size={28} color="var(--primary)" style={{ animation: 'spin 1s linear infinite', marginBottom: 8 }} />
+                                <p style={{ fontWeight: 600, fontSize: 14, color: 'var(--primary)' }}>กำลังปรับขนาดรูป...</p>
+                            </>
+                        ) : (
+                            <>
+                                <Camera size={32} color="var(--text-muted)" style={{ marginBottom: 8 }} />
+                                <p style={{ fontWeight: 600, fontSize: 14, marginBottom: 4 }}>
+                                    📸 แตะเพื่อแนบรูป Lottery (หลายรูปได้)
+                                </p>
+                                <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+                                    เลือกได้หลายรูปพร้อมกัน — ระบบจะปรับขนาดอัตโนมัติ
+                                </p>
+                            </>
+                        )}
                     </div>
 
                     {/* File list preview (no image preload) */}
@@ -502,7 +523,7 @@ export default function AdminOrderDetailPage() {
                         className="btn btn-success btn-full"
                         style={{ padding: '14px 24px', fontSize: 15 }}
                         onClick={handleComplete}
-                        disabled={processing || ticketFiles.length === 0}
+                        disabled={processing || ticketFiles.length === 0 || isCompressingTickets}
                     >
                         {processing ? (
                             <><Loader2 size={18} style={{ animation: 'spin 1s linear infinite' }} /> กำลังบันทึก...</>

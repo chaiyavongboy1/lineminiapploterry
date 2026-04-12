@@ -1,9 +1,11 @@
 'use client';
 
-import { useState, useRef, Suspense } from 'react';
+import { useRef, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
+import { useState } from 'react';
 import { ArrowLeft, Upload, Camera, CheckCircle, Loader2 } from 'lucide-react';
 import Link from 'next/link';
+import { useImageUpload } from '@/hooks/useImageUpload';
 
 function UploadSlipContent() {
     const searchParams = useSearchParams();
@@ -11,31 +13,20 @@ function UploadSlipContent() {
     const orderId = searchParams.get('orderId');
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    const [file, setFile] = useState<File | null>(null);
-    const [preview, setPreview] = useState<string | null>(null);
+    const imageUpload = useImageUpload({ maxSizeMB: 1, maxWidthPx: 1920 });
     const [amount, setAmount] = useState('');
     const [bankName, setBankName] = useState('');
     const [uploading, setUploading] = useState(false);
     const [success, setSuccess] = useState(false);
 
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const selectedFile = e.target.files?.[0];
-        if (selectedFile) {
-            setFile(selectedFile);
-            const reader = new FileReader();
-            reader.onload = () => setPreview(reader.result as string);
-            reader.readAsDataURL(selectedFile);
-        }
-    };
-
     const handleSubmit = async () => {
-        if (!file || !orderId) return;
+        if (!imageUpload.file || !orderId) return;
 
         setUploading(true);
         try {
             const formData = new FormData();
             formData.append('orderId', orderId);
-            formData.append('slip', file);
+            formData.append('slip', imageUpload.file);
             if (amount) formData.append('amount', amount);
             if (bankName) formData.append('bankName', bankName);
 
@@ -97,21 +88,26 @@ function UploadSlipContent() {
 
             {/* Upload Area */}
             <div
-                className={`upload-area ${preview ? 'active' : ''}`}
-                style={{ marginBottom: 16 }}
-                onClick={() => fileInputRef.current?.click()}
+                className={`upload-area ${imageUpload.preview ? 'active' : ''}`}
+                style={{ marginBottom: 16, cursor: imageUpload.isCompressing ? 'wait' : 'pointer' }}
+                onClick={() => !imageUpload.isCompressing && fileInputRef.current?.click()}
             >
                 <input
                     ref={fileInputRef}
                     type="file"
-                    accept="image/*"
-                    onChange={handleFileChange}
+                    accept="image/jpeg,image/png,image/webp"
+                    onChange={imageUpload.onInputChange}
                     style={{ display: 'none' }}
                 />
 
-                {preview ? (
+                {imageUpload.isCompressing ? (
+                    <>
+                        <Loader2 size={36} color="var(--primary)" style={{ animation: 'spin 1s linear infinite', marginBottom: 8 }} />
+                        <p style={{ fontWeight: 600, fontSize: 14, color: 'var(--primary)' }}>กำลังปรับขนาดรูป...</p>
+                    </>
+                ) : imageUpload.preview ? (
                     <div className="slip-preview" style={{ margin: '0 auto' }}>
-                        <img src={preview} alt="slip preview" />
+                        <img src={imageUpload.preview} alt="slip preview" />
                     </div>
                 ) : (
                     <>
@@ -122,13 +118,25 @@ function UploadSlipContent() {
                             แตะเพื่อเลือกรูปสลิป
                         </p>
                         <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>
-                            รองรับ JPG, PNG (สูงสุด 10MB)
+                            รองรับ JPG, PNG, WEBP (สูงสุด 15MB — ระบบจะปรับขนาดอัตโนมัติ)
                         </p>
                     </>
                 )}
             </div>
 
-            {preview && (
+            {imageUpload.error && (
+                <div style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)', borderRadius: 10, padding: '10px 14px', marginBottom: 12, fontSize: 13, color: 'var(--danger)' }}>
+                    ⚠️ {imageUpload.error}
+                </div>
+            )}
+
+            {imageUpload.sizeHint && (
+                <div style={{ fontSize: 12, color: 'var(--text-muted)', textAlign: 'center', marginBottom: 10 }}>
+                    📦 {imageUpload.sizeHint}
+                </div>
+            )}
+
+            {imageUpload.preview && (
                 <button
                     className="btn btn-outline btn-full"
                     style={{ marginBottom: 16, fontSize: 13 }}
@@ -185,7 +193,7 @@ function UploadSlipContent() {
                 className="btn btn-success btn-full"
                 style={{ padding: '14px 24px', fontSize: 16, marginBottom: 24 }}
                 onClick={handleSubmit}
-                disabled={!file || uploading}
+                disabled={!imageUpload.file || uploading || imageUpload.isCompressing}
             >
                 {uploading ? (
                     <>

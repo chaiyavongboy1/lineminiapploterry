@@ -384,7 +384,9 @@ export default function HomePage() {
                             <div style={{
                                 borderRadius: 20, marginBottom: 18,
                                 border: `2px solid ${s.borderColor}`, position: 'relative', overflow: 'hidden',
-                                height: 180,
+                                height: 180, background: s.bg,
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                padding: '16px 24px',
                             }}>
                                 {/* eslint-disable-next-line @next/next/no-img-element */}
                                 <img
@@ -392,17 +394,11 @@ export default function HomePage() {
                                     alt={selectedLottery.name}
                                     style={{
                                         width: '100%', height: '100%',
-                                        objectFit: 'cover',
+                                        objectFit: 'contain',
                                         objectPosition: 'center',
                                         display: 'block',
                                     }}
                                 />
-                                {/* Gradient overlay */}
-                                <div style={{
-                                    position: 'absolute', inset: 0,
-                                    background: `linear-gradient(180deg, transparent 40%, ${s.bg} 100%)`,
-                                    pointerEvents: 'none',
-                                }} />
                             </div>
 
                             {/* Draw info */}

@@ -118,10 +118,14 @@ export async function POST(req: NextRequest) {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function autoCheckOrders(supabase: any, drawResultId: string, lotteryTypeId: string, drawDate: string) {
     // 1. Get prize tiers for this lottery type
-    const { data: prizeTiers } = await supabase
+    const { data: prizeTiers, error: ptError } = await supabase
         .from('prize_tiers')
         .select('*')
         .eq('lottery_type_id', lotteryTypeId);
+
+    if (ptError) {
+        console.error('[autoCheck] Failed to fetch prize_tiers:', ptError.message);
+    }
 
     // 2. Get the draw result winning numbers
     const { data: drawResult } = await supabase
@@ -130,7 +134,16 @@ async function autoCheckOrders(supabase: any, drawResultId: string, lotteryTypeI
         .eq('id', drawResultId)
         .single();
 
-    if (!drawResult || !prizeTiers?.length) return [];
+    if (!drawResult) {
+        console.error('[autoCheck] Draw result not found:', drawResultId);
+        return [];
+    }
+
+    if (!prizeTiers?.length) {
+        console.error(`[autoCheck] ⚠️ NO PRIZE TIERS found for lottery_type_id=${lotteryTypeId}. Winners cannot be determined! Run 009_reseed_prize_tiers.sql to fix.`);
+        return [];
+    }
+
 
     // 3. Get lottery type name for notifications
     const { data: lotteryType } = await supabase
@@ -140,8 +153,7 @@ async function autoCheckOrders(supabase: any, drawResultId: string, lotteryTypeI
         .single();
 
     // 4. Find all order_lines for orders matching this lottery_type_id & draw_date
-    //    - Only 'completed' orders (ซื้อสินค้าแล้ว)
-    //    - Order must have been created on or before the draw date
+    //    - Only 'approved' or 'completed' orders (ชำระเงินแล้ว / ซื้อสินค้าแล้ว)
     const { data: orders } = await supabase
         .from('orders')
         .select('id, user_id, created_at')
@@ -149,7 +161,10 @@ async function autoCheckOrders(supabase: any, drawResultId: string, lotteryTypeI
         .eq('draw_date', drawDate)
         .in('status', ['approved', 'completed']);
 
-    if (!orders?.length) return [];
+    if (!orders?.length) {
+        return [];
+    }
+
 
     const orderIds = orders.map((o: { id: string }) => o.id);
 
@@ -164,20 +179,27 @@ async function autoCheckOrders(supabase: any, drawResultId: string, lotteryTypeI
         .select('*')
         .in('order_id', orderIds);
 
-    if (!orderLines?.length) return [];
+    if (!orderLines?.length) {
+        return [];
+    }
 
-    // 4. Check each line
+    // Ensure winning numbers are proper number arrays (guard against type coercion issues)
+    const winNums: number[] = (drawResult.winning_numbers || []).map(Number);
+    const winSpecial: number | null = drawResult.special_number != null ? Number(drawResult.special_number) : null;
+
+
+    // 5. Check each line
     const results = [];
     for (const line of orderLines) {
-        const check = checkLine(
-            line.numbers,
-            line.special_number,
-            drawResult.winning_numbers,
-            drawResult.special_number
-        );
+        // Coerce customer numbers to ensure proper comparison
+        const custNums: number[] = (line.numbers || []).map(Number);
+        const custSpecial: number | null = line.special_number != null ? Number(line.special_number) : null;
+
+        const check = checkLine(custNums, custSpecial, winNums, winSpecial);
 
         const tier = findPrizeTier(check.matchCount, check.matchSpecial, prizeTiers as PrizeTier[]);
         const isWinner = tier !== null;
+
 
         const resultRow = {
             order_line_id: line.id,
@@ -193,15 +215,20 @@ async function autoCheckOrders(supabase: any, drawResultId: string, lotteryTypeI
         results.push(resultRow);
     }
 
-    // 5. Upsert results
+    // 6. Upsert results
     if (results.length > 0) {
-        await supabase
+        const { error: upsertError } = await supabase
             .from('order_line_results')
             .upsert(results, { onConflict: 'order_line_id,draw_result_id' });
+
+        if (upsertError) {
+            console.error('[autoCheck] Failed to upsert results:', upsertError.message);
+        }
     }
 
-    // 6. Send push notifications to all winners
+    // 7. Send push notifications to all winners
     const winners = results.filter(r => r.is_winner);
+
     if (winners.length > 0) {
         // Collect unique user IDs for winners
         const winnerUserIds = new Set<string>();

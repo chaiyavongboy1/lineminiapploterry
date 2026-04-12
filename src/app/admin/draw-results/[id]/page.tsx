@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/client';
 import { formatDate } from '@/lib/utils';
 import { ArrowLeft, Trophy, User, Calendar, Percent, DollarSign } from 'lucide-react';
 import Link from 'next/link';
+import { compressImage, validateImageFile } from '@/lib/image-compress';
 
 interface DrawResultDetail {
     id: string;
@@ -88,11 +89,18 @@ export default function DrawResultDetailPage() {
 
     const handleUploadSlip = async (resultId: string, file: File) => {
         if (!file) return;
+
+        // Validate + compress before upload
+        const validationError = validateImageFile(file);
+        if (validationError) { alert(validationError); return; }
+
         setUploadingSlip(resultId);
         try {
+            const { file: compressed } = await compressImage(file, { maxSizeMB: 1, maxWidthPx: 1920 });
+
             const formData = new FormData();
             formData.append('orderLineResultId', resultId);
-            formData.append('slip', file);
+            formData.append('slip', compressed);
 
             const res = await fetch('/api/admin/prize-transfer', {
                 method: 'POST',
@@ -177,6 +185,16 @@ export default function DrawResultDetailPage() {
 
     const hasTaxInfo = taxSettings.taxRate || taxSettings.exchangeRate;
 
+    // Determine if a prize tier is taxable based on lottery type and tier
+    // Powerball: Tier 1 (Jackpot), Tier 2 (5 Match), Tier 3 (4+PB) → taxable
+    // Mega Millions: Tier 1 (Jackpot), Tier 2 (5 Match) → taxable
+    function isTaxableTier(tierOrder: number | undefined): boolean {
+        if (!tierOrder) return false;
+        if (lotteryName === 'Powerball') return tierOrder <= 3;
+        if (lotteryName === 'Mega Millions') return tierOrder <= 2;
+        return false;
+    }
+
     return (
         <div>
             {/* Header */}
@@ -260,6 +278,78 @@ export default function DrawResultDetailPage() {
                 </div>
             </div>
 
+            {/* ── TRANSFER SUMMARY BOX ── */}
+            {hasTaxInfo && winners.length > 0 && (() => {
+                const taxR = parseFloat(taxSettings.taxRate) || 0;
+                const exR = parseFloat(taxSettings.exchangeRate) || 0;
+                const totalPrizeUSD = winners.reduce((sum, w) => sum + (w.prize_amount || 0), 0);
+
+                // Only tax tiers that qualify
+                const taxableWinners = winners.filter(w => isTaxableTier(w.prize_tier?.tier_order));
+                const taxablePrizeUSD = taxableWinners.reduce((sum, w) => sum + (w.prize_amount || 0), 0);
+                const totalTaxUSD = taxR > 0 ? taxablePrizeUSD * (taxR / 100) : 0;
+                const totalNetUSD = totalPrizeUSD - totalTaxUSD;
+                const totalTransferTHB = exR > 0 ? totalNetUSD * exR : 0;
+                const hasTaxableWinners = taxableWinners.length > 0;
+
+                return (
+                    <div style={{
+                        background: 'linear-gradient(135deg, rgba(39,174,96,0.08), rgba(39,174,96,0.02))',
+                        border: '2px solid rgba(39,174,96,0.25)',
+                        borderRadius: 14,
+                        padding: '16px 18px',
+                        marginBottom: 16,
+                    }}>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--success)', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
+                            💸 สรุปยอดที่ต้องโอน (งวด {formatDateThai(drawResult.draw_date)})
+                        </div>
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--text-muted)' }}>
+                                <span>รางวัลรวม ({winners.length} รายการ)</span>
+                                <strong style={{ color: 'var(--text)' }}>${totalPrizeUSD.toLocaleString(undefined, { minimumFractionDigits: 2 })}</strong>
+                            </div>
+                            {hasTaxableWinners && taxR > 0 && (
+                                <>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--text-muted)' }}>
+                                        <span>ส่วนที่เสียภาษี ({taxableWinners.length} รายการ)</span>
+                                        <strong style={{ color: 'var(--text)' }}>${taxablePrizeUSD.toLocaleString(undefined, { minimumFractionDigits: 2 })}</strong>
+                                    </div>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--text-muted)' }}>
+                                        <span>หักภาษี {taxSettings.taxRate}%</span>
+                                        <strong style={{ color: 'var(--danger)' }}>-${totalTaxUSD.toLocaleString(undefined, { minimumFractionDigits: 2 })}</strong>
+                                    </div>
+                                </>
+                            )}
+                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--text-muted)' }}>
+                                <span>รางวัลสุทธิ{hasTaxableWinners ? ' (หลังหักภาษี)' : ''}</span>
+                                <strong style={{ color: 'var(--text)' }}>${totalNetUSD.toLocaleString(undefined, { minimumFractionDigits: 2 })}</strong>
+                            </div>
+                            {exR > 0 && (
+                                <>
+                                    <div style={{ borderTop: '1px dashed var(--border)', margin: '4px 0' }} />
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--text-muted)' }}>
+                                        <span>เรทเงิน</span>
+                                        <span>$1 = ฿{exR}</span>
+                                    </div>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14, fontWeight: 700 }}>
+                                        <span style={{ color: 'var(--success)' }}>ยอดโอนรวม (THB)</span>
+                                        <span style={{ color: 'var(--success)', fontSize: 18 }}>
+                                            ฿{totalTransferTHB.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                        </span>
+                                    </div>
+                                </>
+                            )}
+                            {hasTaxableWinners && (
+                                <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 4 }}>
+                                    ⚠️ ภาษีหักเฉพาะรางวัลขั้นสูง: {lotteryName === 'Powerball' ? 'Tier 1-3 (Jackpot, 5 Match, 4+PB)' : 'Tier 1-2 (Jackpot, 5 Match)'}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                );
+            })()}
+
             {/* Tax & Exchange Rate Info Banner (if set) */}
             {hasTaxInfo && winners.length > 0 && (
                 <div style={{
@@ -278,7 +368,8 @@ export default function DrawResultDetailPage() {
                     {taxSettings.taxRate && (
                         <div style={{ fontSize: 12, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 6 }}>
                             <Percent size={12} />
-                            ภาษี: <strong style={{ color: 'var(--text)' }}>{taxSettings.taxRate}%</strong> ของมูลค่ารางวัล
+                            ภาษี: <strong style={{ color: 'var(--text)' }}>{taxSettings.taxRate}%</strong>
+                            <span style={{ fontSize: 11 }}>(เฉพาะ {lotteryName === 'Powerball' ? 'Tier 1-3' : 'Tier 1-2'})</span>
                         </div>
                     )}
                     {taxSettings.exchangeRate && (
@@ -301,8 +392,10 @@ export default function DrawResultDetailPage() {
                             const prizeAmount = w.prize_amount || 0;
                             const taxRate = parseFloat(taxSettings.taxRate) || 0;
                             const exchangeRate = parseFloat(taxSettings.exchangeRate) || 0;
-                            const taxAmount = taxRate > 0 ? (prizeAmount * taxRate / 100) : 0;
-                            const prizeInTHB = exchangeRate > 0 ? (prizeAmount * exchangeRate) : 0;
+                            const isTaxable = isTaxableTier(w.prize_tier?.tier_order);
+                            const taxAmount = isTaxable && taxRate > 0 ? (prizeAmount * taxRate / 100) : 0;
+                            const netPayout = prizeAmount - taxAmount;
+                            const transferTHB = exchangeRate > 0 ? (netPayout * exchangeRate) : 0;
 
                             return (
                                 <div key={w.id} className="card" style={{
@@ -400,8 +493,8 @@ export default function DrawResultDetailPage() {
                                             </div>
                                         )}
 
-                                        {/* Tax */}
-                                        {taxSettings.taxRate && (
+                                        {/* Tax — only show if this tier is taxable */}
+                                        {isTaxable && taxSettings.taxRate && (
                                             <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: 'var(--text-muted)' }}>
                                                 <Percent size={11} />
                                                 <span>ภาษี {taxSettings.taxRate}%:</span>
@@ -412,13 +505,24 @@ export default function DrawResultDetailPage() {
                                             </div>
                                         )}
 
-                                        {/* Exchange Rate */}
+                                        {/* Net payout after tax — only show if taxable */}
+                                        {isTaxable && taxSettings.taxRate && (
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: 'var(--text-muted)' }}>
+                                                <DollarSign size={11} />
+                                                <span>รางวัลหลังหักภาษี:</span>
+                                                <strong style={{ color: 'var(--text)' }}>
+                                                    ${netPayout.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                </strong>
+                                            </div>
+                                        )}
+
+                                        {/* Exchange Rate + THB */}
                                         {taxSettings.exchangeRate && (
                                             <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: 'var(--text-muted)' }}>
                                                 <DollarSign size={11} />
                                                 <span>เรทเงิน $1 = ฿{taxSettings.exchangeRate}:</span>
                                                 <strong style={{ color: 'var(--success)' }}>
-                                                    ≈ ฿{prizeInTHB.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                    = ฿{transferTHB.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                                 </strong>
                                             </div>
                                         )}
@@ -450,7 +554,7 @@ export default function DrawResultDetailPage() {
                                                         {uploadingSlip === w.id ? 'กำลังแนบสลิป...' : '📤 แนบสลิปการโอนเงิน'}
                                                         <input 
                                                             type="file" 
-                                                            accept="image/*" 
+                                                            accept="image/jpeg,image/png,image/webp" 
                                                             style={{ display: 'none' }} 
                                                             onChange={(e) => {
                                                                 if (e.target.files && e.target.files.length > 0) {
