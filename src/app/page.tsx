@@ -382,15 +382,27 @@ export default function HomePage() {
                         <div>
                             {/* Modal hero */}
                             <div style={{
-                                background: s.bg, borderRadius: 20, padding: '24px 18px',
-                                textAlign: 'center', marginBottom: 18,
+                                borderRadius: 20, marginBottom: 18,
                                 border: `2px solid ${s.borderColor}`, position: 'relative', overflow: 'hidden',
-                                backdropFilter: 'blur(12px)',
+                                height: 180,
                             }}>
-                                <div style={{ position: 'absolute', top: -35, right: -35, width: 140, height: 140, borderRadius: '50%', background: `radial-gradient(circle, ${s.glow} 0%, transparent 65%)`, pointerEvents: 'none' }} />
-                                <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 14 }}>
-                                    <LotteryLogo type={selectedLottery.name} size={72} />
-                                </div>
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img
+                                    src={selectedLottery.name.toLowerCase().includes('powerball') ? '/powerball-logo.png' : '/megamillions-logo.png'}
+                                    alt={selectedLottery.name}
+                                    style={{
+                                        width: '100%', height: '100%',
+                                        objectFit: 'cover',
+                                        objectPosition: 'center',
+                                        display: 'block',
+                                    }}
+                                />
+                                {/* Gradient overlay */}
+                                <div style={{
+                                    position: 'absolute', inset: 0,
+                                    background: `linear-gradient(180deg, transparent 40%, ${s.bg} 100%)`,
+                                    pointerEvents: 'none',
+                                }} />
                             </div>
 
                             {/* Draw info */}
