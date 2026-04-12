@@ -11,7 +11,8 @@ function getClient(): Client {
     return _client;
 }
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || '';
+const MINI_APP_ID = process.env.NEXT_PUBLIC_LINE_MINI_APP_ID || '';
+const APP_URL = `https://miniapp.line.me/${MINI_APP_ID}`;
 
 // Helper: build a styled Flex Bubble for notifications
 function buildNotificationFlex(
