@@ -2,7 +2,10 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, ClipboardList, Trophy, BookOpen, User } from 'lucide-react';
+import { Home, ClipboardList, Trophy, BookOpen, User, ShieldCheck } from 'lucide-react';
+import { useLine } from '@/components/LineProvider';
+import { useEffect, useState } from 'react';
+import { createClient } from '@/lib/supabase/client';
 
 const navItems = [
     { href: '/', icon: Home, label: 'หน้าหลัก' },
@@ -14,14 +17,39 @@ const navItems = [
 
 export default function BottomNav() {
     const pathname = usePathname();
+    const { profile, isReady } = useLine();
+    const [isAdmin, setIsAdmin] = useState(false);
+
+    useEffect(() => {
+        async function checkAdmin() {
+            if (!profile?.userId) return;
+            try {
+                const supabase = createClient();
+                const { data } = await supabase
+                    .from('users')
+                    .select('role')
+                    .eq('line_user_id', profile.userId)
+                    .single();
+                setIsAdmin(data?.role === 'admin' || data?.role === 'super_admin');
+            } catch {
+                // not admin
+            }
+        }
+        if (isReady) checkAdmin();
+    }, [isReady, profile]);
 
     // Hide bottom nav on admin pages and flow pages with their own navigation
     const hideOnPaths = ['/admin', '/lottery/', '/order/checkout'];
     if (hideOnPaths.some(p => pathname.startsWith(p))) return null;
 
+    // Build nav items - add admin if user is admin
+    const allItems = isAdmin
+        ? [...navItems, { href: '/admin', icon: ShieldCheck, label: 'Admin' }]
+        : navItems;
+
     return (
         <nav className="bottom-nav">
-            {navItems.map(item => {
+            {allItems.map(item => {
                 const isActive = pathname === item.href ||
                     (item.href !== '/' && pathname.startsWith(item.href));
                 return (
