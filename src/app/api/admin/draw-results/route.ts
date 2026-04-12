@@ -217,7 +217,7 @@ async function autoCheckOrders(supabase: any, drawResultId: string, lotteryTypeI
             const tier = (prizeTiers as PrizeTier[]).find(t => t.id === winner.prize_tier_id);
             winnerDetails.push({
                 userId,
-                prizeName: tier?.name || 'รางวัล',
+                prizeName: tier?.prize_name || 'รางวัล',
                 prizeAmount: winner.prize_amount,
             });
             winnerUserIds.add(userId);
