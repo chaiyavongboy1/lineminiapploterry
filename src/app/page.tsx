@@ -300,19 +300,6 @@ export default function HomePage() {
                                         <div style={{ flex: 1, minWidth: 0, position: 'relative' }}>
                                             <h3 style={{ fontSize: 18, fontWeight: 900, marginBottom: 6, color: '#1a2740' }}>{lottery.name}</h3>
 
-                                            {lottery.estimated_jackpot && (
-                                                <div style={{
-                                                    display: 'inline-flex', alignItems: 'center', gap: 4,
-                                                    padding: '5px 12px', background: s.chip,
-                                                    borderRadius: 20, color: s.chipText,
-                                                    fontSize: 12, fontWeight: 800, marginBottom: 8,
-                                                    boxShadow: `0 2px 10px ${s.glow}`,
-                                                }}>
-                                                    <TrendingUp size={12} />
-                                                    {lottery.estimated_jackpot}
-                                                </div>
-                                            )}
-
                                             <div style={{ display: 'flex', gap: 14, fontSize: 11, color: 'var(--text-secondary)', fontWeight: 600 }}>
                                                 <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                                                     <Calendar size={11} color={s.accent} />
@@ -404,12 +391,6 @@ export default function HomePage() {
                                 <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 14 }}>
                                     <LotteryLogo type={selectedLottery.name} size={72} />
                                 </div>
-                                {selectedLottery.estimated_jackpot && (
-                                    <div style={{ fontSize: 30, fontWeight: 900, color: s.chipText, marginBottom: 4, letterSpacing: '-0.02em' }}>
-                                        {selectedLottery.estimated_jackpot}
-                                    </div>
-                                )}
-                                <p style={{ fontSize: 12, color: 'var(--text-muted)', fontWeight: 600 }}>Estimated Jackpot</p>
                             </div>
 
                             {/* Draw info */}
