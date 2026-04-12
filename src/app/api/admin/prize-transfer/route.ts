@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { notifyUserPrizeTransferred } from '@/lib/line-messaging';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
@@ -61,6 +62,52 @@ export async function POST(request: NextRequest) {
                 { success: false, error: 'Failed to update record' },
                 { status: 500 }
             );
+        }
+
+        // Send push notification to user
+        try {
+            // Get the order_line_result with related order info
+            const { data: lineResult } = await supabaseAdmin
+                .from('order_line_results')
+                .select('prize_amount, order_line_id')
+                .eq('id', orderLineResultId)
+                .single();
+
+            if (lineResult) {
+                // Get order_line -> order -> user
+                const { data: orderLine } = await supabaseAdmin
+                    .from('order_lines')
+                    .select('order_id')
+                    .eq('id', lineResult.order_line_id)
+                    .single();
+
+                if (orderLine) {
+                    const { data: order } = await supabaseAdmin
+                        .from('orders')
+                        .select('order_number, user_id')
+                        .eq('id', orderLine.order_id)
+                        .single();
+
+                    if (order) {
+                        const { data: user } = await supabaseAdmin
+                            .from('users')
+                            .select('line_user_id')
+                            .eq('id', order.user_id)
+                            .single();
+
+                        if (user?.line_user_id) {
+                            await notifyUserPrizeTransferred(
+                                user.line_user_id,
+                                order.order_number,
+                                lineResult.prize_amount || 0
+                            );
+                        }
+                    }
+                }
+            }
+        } catch (notifyErr) {
+            console.error('Failed to send prize transfer notification:', notifyErr);
+            // Don't fail the request if notification fails
         }
 
         return NextResponse.json({

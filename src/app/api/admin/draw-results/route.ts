@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase/server';
 import { checkLine, findPrizeTier } from '@/lib/prize-checker';
+import { notifyUserWonPrize } from '@/lib/line-messaging';
 import type { PrizeTier } from '@/types';
 
 // GET /api/admin/draw-results — List all draw results
@@ -131,12 +132,19 @@ async function autoCheckOrders(supabase: any, drawResultId: string, lotteryTypeI
 
     if (!drawResult || !prizeTiers?.length) return [];
 
-    // 3. Find all order_lines for orders matching this lottery_type_id & draw_date
+    // 3. Get lottery type name for notifications
+    const { data: lotteryType } = await supabase
+        .from('lottery_types')
+        .select('name')
+        .eq('id', lotteryTypeId)
+        .single();
+
+    // 4. Find all order_lines for orders matching this lottery_type_id & draw_date
     //    - Only 'completed' orders (ซื้อสินค้าแล้ว)
     //    - Order must have been created on or before the draw date
     const { data: orders } = await supabase
         .from('orders')
-        .select('id, created_at')
+        .select('id, user_id, created_at')
         .eq('lottery_type_id', lotteryTypeId)
         .eq('draw_date', drawDate)
         .in('status', ['approved', 'completed']);
@@ -144,6 +152,12 @@ async function autoCheckOrders(supabase: any, drawResultId: string, lotteryTypeI
     if (!orders?.length) return [];
 
     const orderIds = orders.map((o: { id: string }) => o.id);
+
+    // Build a map: order_id -> user_id
+    const orderUserMap = new Map<string, string>();
+    for (const o of orders) {
+        orderUserMap.set(o.id, o.user_id);
+    }
 
     const { data: orderLines } = await supabase
         .from('order_lines')
@@ -184,6 +198,57 @@ async function autoCheckOrders(supabase: any, drawResultId: string, lotteryTypeI
         await supabase
             .from('order_line_results')
             .upsert(results, { onConflict: 'order_line_id,draw_result_id' });
+    }
+
+    // 6. Send push notifications to all winners
+    const winners = results.filter(r => r.is_winner);
+    if (winners.length > 0) {
+        // Collect unique user IDs for winners
+        const winnerUserIds = new Set<string>();
+        const winnerDetails: { userId: string; prizeName: string; prizeAmount: number }[] = [];
+
+        for (const winner of winners) {
+            // Find order_id from orderLines
+            const line = orderLines?.find((l: { id: string }) => l.id === winner.order_line_id);
+            if (!line) continue;
+            const userId = orderUserMap.get(line.order_id);
+            if (!userId) continue;
+
+            const tier = (prizeTiers as PrizeTier[]).find(t => t.id === winner.prize_tier_id);
+            winnerDetails.push({
+                userId,
+                prizeName: tier?.name || 'รางวัล',
+                prizeAmount: winner.prize_amount,
+            });
+            winnerUserIds.add(userId);
+        }
+
+        // Get LINE user IDs for all winning users
+        if (winnerUserIds.size > 0) {
+            const { data: winnerUsers } = await supabase
+                .from('users')
+                .select('id, line_user_id')
+                .in('id', Array.from(winnerUserIds));
+
+            const userLineMap = new Map<string, string>();
+            for (const u of winnerUsers || []) {
+                userLineMap.set(u.id, u.line_user_id);
+            }
+
+            // Send notification per winner line
+            for (const detail of winnerDetails) {
+                const lineUserId = userLineMap.get(detail.userId);
+                if (lineUserId) {
+                    await notifyUserWonPrize(
+                        lineUserId,
+                        lotteryType?.name || 'Lottery',
+                        detail.prizeName,
+                        detail.prizeAmount,
+                        drawDate
+                    ).catch(err => console.error('Failed to notify winner:', err));
+                }
+            }
+        }
     }
 
     return results;
