@@ -286,8 +286,7 @@ export default function LotteryPage() {
                         {lottery.name === 'Powerball' ? '🔴' : '🟡'} {lottery.name}
                     </h1>
                     <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 6 }}>
-                        เลือก {lottery.numbers_to_pick} ตัวเลข (1-{lottery.max_number})
-                        {lottery.max_special_number && ` + ${specialLabel} (1-${lottery.max_special_number})`}
+                        {lottery.description || `เลือก ${lottery.numbers_to_pick} ตัวเลข (1-${lottery.max_number})${lottery.max_special_number ? ` + ${specialLabel} (1-${lottery.max_special_number})` : ''}`}
                     </p>
                     <div style={{ display: 'inline-block', background: 'var(--bg)', border: '1px solid var(--border)', padding: '4px 10px', borderRadius: 8, fontSize: 13, fontWeight: 700, color: 'var(--accent)' }}>
                         รวม {formatCurrency(lottery.price_per_line + (lottery.service_fee || 0))} / Line

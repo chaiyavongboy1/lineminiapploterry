@@ -220,7 +220,7 @@ export default function HomePage() {
                                 American Lottery
                             </h1>
                             <p style={{ fontSize: 13, color: 'var(--blue-600)', fontWeight: 600, marginTop: 3, display: 'flex', alignItems: 'center', gap: 5 }}>
-                                🇺🇸 ซื้อหวยอเมริกาผ่าน LINE
+                                บริการรับฝากซื้อ USA Lottery ผ่าน LINE
                             </p>
                         </div>
                     </div>
@@ -262,7 +262,7 @@ export default function HomePage() {
                     <div className="icon-box icon-box-grad-blue" style={{ width: 32, height: 32, borderRadius: 10 }}>
                         <Star size={15} color="#fff" />
                     </div>
-                    <h2 style={{ fontSize: 16, fontWeight: 800 }}>เลือกหวยที่ต้องการ</h2>
+                    <h2 style={{ fontSize: 16, fontWeight: 800 }}>เลือกประเภท Lottery ที่ต้องการ</h2>
                 </div>
 
                 {loading ? (
@@ -386,7 +386,7 @@ export default function HomePage() {
                                 <img src="/step-ticket.png" alt="เลือกหวย" style={{ width: 40, height: 40, objectFit: 'contain' }} />
                             </div>
                             <div style={{ fontSize: 10, fontWeight: 800, color: '#3085f0', letterSpacing: '0.14em', marginBottom: 3 }}>STEP 01</div>
-                            <div style={{ fontSize: 15, fontWeight: 800, color: '#1a2740' }}>เลือกหวย</div>
+                            <div style={{ fontSize: 15, fontWeight: 800, color: '#1a2740' }}>เลือก Lottery</div>
                         </div>
 
                         {/* Arrow → */}
@@ -543,7 +543,7 @@ export default function HomePage() {
                                 {[
                                     { label: 'ราคาต่อ Line', value: `฿${selectedLottery.price_per_line.toLocaleString()}`, icon: '💰' },
                                     { label: 'ค่าบริการ',   value: `฿${selectedLottery.service_fee.toLocaleString()}`,    icon: '🛎️' },
-                                    { label: 'เลือกเลข', value: `${selectedLottery.numbers_to_pick} ตัว (1-${selectedLottery.max_number})${selectedLottery.max_special_number ? ` + พิเศษ (1-${selectedLottery.max_special_number})` : ''}`, icon: '🔢' },
+                                    { label: 'เลือกเลข', value: selectedLottery.description || `${selectedLottery.numbers_to_pick} ตัว (1-${selectedLottery.max_number})${selectedLottery.max_special_number ? ` + พิเศษ (1-${selectedLottery.max_special_number})` : ''}`, icon: '🔢' },
                                 ].map((row, i, arr) => (
                                     <div key={i} style={{
                                         display: 'flex', justifyContent: 'space-between', alignItems: 'center',

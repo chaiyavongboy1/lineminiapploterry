@@ -398,7 +398,7 @@ function CheckoutContent() {
                                     className="btn btn-accent btn-full"
                                     style={{ flex: 1, padding: '12px', fontSize: 14 }}
                                 >
-                                    ตกลง → แนบสลิป
+                                    ตกลง
                                 </button>
                             </div>
                         </div>
