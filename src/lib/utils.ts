@@ -12,13 +12,14 @@ export function generatePromptPayQR(amount: number): string {
 
 /**
  * Generate order number
- * Format: ORD-YYYYMMDD-XXXX
+ * Format: ORD-YYYYMMDD-HHMM-XXXX (includes time for better uniqueness)
  */
 export function generateOrderNumber(): string {
     const now = new Date();
     const dateStr = now.toISOString().slice(0, 10).replace(/-/g, '');
+    const timeStr = now.toTimeString().slice(0, 5).replace(':', '');
     const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
-    return `ORD-${dateStr}-${random}`;
+    return `ORD-${dateStr}-${timeStr}-${random}`;
 }
 
 /**

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef, Suspense } from 'react';
+import { useEffect, useState, useRef, useCallback, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import QRCode from 'react-qr-code';
@@ -51,18 +51,27 @@ function CheckoutContent() {
     const [orderId, setOrderId] = useState('');
     const [orderNumber, setOrderNumber] = useState('');
     const [showConfirmModal, setShowConfirmModal] = useState(false);
+    const [orderCreated, setOrderCreated] = useState(false);
+    const submittingRef = useRef(false);
 
     // Parse checkout data
     useEffect(() => {
         const raw = searchParams.get('data');
-        if (!raw) return;
+        if (!raw) {
+            // No checkout data — redirect to home (prevents stale page access)
+            if (!orderId) {
+                router.replace('/');
+            }
+            return;
+        }
         try {
             const decoded = JSON.parse(decodeURIComponent(atob(raw)));
             setData(decoded);
         } catch (err) {
             console.error('Failed to decode checkout data:', err);
+            router.replace('/');
         }
-    }, [searchParams]);
+    }, [searchParams, orderId, router]);
 
     // Load payment settings from Supabase
     useEffect(() => {
@@ -121,8 +130,10 @@ function CheckoutContent() {
     };
 
 
-    const handleConfirmSlip = async () => {
-        if (!slipUpload.file || !data) return;
+    const handleConfirmSlip = useCallback(async () => {
+        // Guard: prevent double-clicks and re-submissions
+        if (!slipUpload.file || !data || submittingRef.current || orderCreated) return;
+        submittingRef.current = true;
         setSubmitting(true);
 
         try {
@@ -145,11 +156,15 @@ function CheckoutContent() {
             const orderResult = await orderRes.json();
             if (!orderResult.success || !orderResult.data) {
                 alert(orderResult.error || 'ไม่สามารถสร้างออร์เดอร์ได้');
+                submittingRef.current = false;
                 setSubmitting(false);
                 return;
             }
 
             const createdOrder = orderResult.data;
+
+            // Mark order as created to prevent re-submission
+            setOrderCreated(true);
 
             // Step 2: Upload payment slip
             const formData = new FormData();
@@ -172,13 +187,18 @@ function CheckoutContent() {
             setOrderId(createdOrder.id);
             setOrderNumber(createdOrder.order_number);
             setStep('success');
+
+            // Clear URL data to prevent refresh re-submission
+            window.history.replaceState({}, '', '/order/checkout');
         } catch (err) {
             console.error('Checkout error:', err);
             alert('เกิดข้อผิดพลาด กรุณาลองใหม่');
+            submittingRef.current = false;
         } finally {
             setSubmitting(false);
         }
-    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [data, slipUpload.file, orderCreated, totalAmount, settings]);
 
     // ============ STEP 1: PAYMENT ============
     if (step === 'payment') {
@@ -498,7 +518,7 @@ function CheckoutContent() {
                     className="btn btn-success btn-full"
                     style={{ padding: '14px 24px', fontSize: 16, marginBottom: 24 }}
                     onClick={handleConfirmSlip}
-                    disabled={!slipUpload.file || submitting || slipUpload.isCompressing}
+                    disabled={!slipUpload.file || submitting || slipUpload.isCompressing || orderCreated}
                 >
                     {submitting ? (
                         <>

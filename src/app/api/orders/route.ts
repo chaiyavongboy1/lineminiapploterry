@@ -57,6 +57,35 @@ export async function POST(request: NextRequest) {
         const totalAmount = subtotal + serviceFee;
         const orderNumber = generateOrderNumber();
 
+        // Duplicate order prevention:
+        // Check if user has a recent order (within 2 minutes) for the same lottery type
+        const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000).toISOString();
+        const { data: recentOrder } = await supabase
+            .from('orders')
+            .select('id, order_number, created_at')
+            .eq('user_id', user.id)
+            .eq('lottery_type_id', lotteryTypeId)
+            .eq('total_lines', totalLines)
+            .gte('created_at', twoMinutesAgo)
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+        if (recentOrder) {
+            // Return the existing order instead of creating a duplicate
+            console.warn(`Duplicate order prevented for user ${user.id}, returning existing order ${recentOrder.order_number}`);
+            const { data: existingOrder } = await supabase
+                .from('orders')
+                .select('*')
+                .eq('id', recentOrder.id)
+                .single();
+
+            return NextResponse.json<ApiResponse<Order>>({
+                success: true,
+                data: existingOrder as Order,
+            });
+        }
+
         // Create order
         const { data: order, error: orderError } = await supabase
             .from('orders')
