@@ -329,43 +329,168 @@ export default function HomePage() {
                 )}
             </div>
 
-            {/* ═══════ How To Play — Glass Card ═══════ */}
+            {/* ═══════ How To Play — Premium Flow Design ═══════ */}
             <div style={{
-                background: 'linear-gradient(150deg, rgba(224,239,255,0.7) 0%, rgba(240,250,255,0.6) 100%)',
-                backdropFilter: 'blur(16px)',
+                background: 'linear-gradient(160deg, rgba(230,243,255,0.85) 0%, rgba(240,248,255,0.75) 35%, rgba(245,250,255,0.80) 65%, rgba(235,246,255,0.85) 100%)',
+                backdropFilter: 'blur(20px) saturate(1.2)',
                 border: '2px solid rgba(74,158,255,0.10)',
-                borderRadius: 22, padding: '20px 18px',
-                marginBottom: 24, boxShadow: 'var(--shadow-md)',
+                borderRadius: 26, padding: '24px 18px 20px',
+                marginBottom: 24, boxShadow: 'var(--shadow-lg)',
+                position: 'relative', overflow: 'hidden',
             }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
-                    <div className="icon-box icon-box-grad-sky" style={{ width: 32, height: 32, borderRadius: 10 }}>
-                        <Zap size={15} color="#fff" />
+                {/* Decorative sparkle dots */}
+                <div style={{ position: 'absolute', width: 6, height: 6, borderRadius: '50%', background: 'rgba(74,158,255,0.25)', top: 18, right: 30, animation: 'float 4s ease-in-out infinite' }} />
+                <div style={{ position: 'absolute', width: 4, height: 4, borderRadius: '50%', background: 'rgba(240,180,41,0.30)', top: 55, right: 15, animation: 'float 5s ease-in-out infinite 1s' }} />
+                <div style={{ position: 'absolute', width: 5, height: 5, borderRadius: '50%', background: 'rgba(34,201,112,0.25)', bottom: 40, left: 20, animation: 'float 6s ease-in-out infinite 0.5s' }} />
+                <div style={{ position: 'absolute', width: 100, height: 100, borderRadius: '50%', background: 'radial-gradient(circle, rgba(74,158,255,0.08) 0%, transparent 70%)', top: -20, right: -20, pointerEvents: 'none' }} />
+                <div style={{ position: 'absolute', width: 80, height: 80, borderRadius: '50%', background: 'radial-gradient(circle, rgba(34,201,112,0.06) 0%, transparent 70%)', bottom: -15, left: -10, pointerEvents: 'none' }} />
+
+                {/* Header */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20, position: 'relative' }}>
+                    <div style={{
+                        width: 36, height: 36, borderRadius: 12,
+                        background: 'linear-gradient(135deg, #4a9eff, #5cc2ff)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        boxShadow: '0 4px 14px rgba(74,158,255,0.30)',
+                    }}>
+                        <Zap size={17} color="#fff" />
                     </div>
-                    <h3 style={{ fontSize: 15, fontWeight: 800 }}>วิธีการเล่น</h3>
+                    <h3 style={{ fontSize: 17, fontWeight: 900, color: 'var(--text)', letterSpacing: '-0.01em' }}>วิธีการฝากซื้อ</h3>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-                    {[
-                        { step: '01', label: 'เลือกหวย', icon: <Ticket size={20} />, bg: 'linear-gradient(135deg, rgba(224,239,255,0.85), rgba(199,226,255,0.7))', border: 'rgba(74,158,255,0.15)', color: '#3085f0' },
-                        { step: '02', label: 'เลือกเลข', icon: <Sparkles size={20} />, bg: 'linear-gradient(135deg, rgba(255,252,240,0.9), rgba(255,248,219,0.8))', border: 'rgba(240,180,41,0.18)', color: '#a07008' },
-                        { step: '03', label: 'ชำระเงิน', icon: <Shield size={20} />,   bg: 'linear-gradient(135deg, rgba(216,251,230,0.85), rgba(240,253,246,0.8))', border: 'rgba(34,201,112,0.18)', color: '#10a85c' },
-                        { step: '04', label: 'รอผลรางวัล', icon: <Gift size={20} />,   bg: 'linear-gradient(135deg, rgba(224,244,255,0.85), rgba(194,234,255,0.7))', border: 'rgba(54,176,240,0.18)', color: '#0c7ab0' },
-                    ].map(item => (
-                        <div key={item.step} style={{
-                            background: item.bg, border: `1.5px solid ${item.border}`,
-                            borderRadius: 16, padding: '14px', display: 'flex', alignItems: 'center', gap: 12,
-                            boxShadow: 'var(--shadow-xs)',
-                            backdropFilter: 'blur(8px)',
+                {/* Step Flow — Zigzag Layout */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 0, position: 'relative' }}>
+
+                    {/* Row 1: Step 1 → Step 2 */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 28px 1fr', gap: 0, alignItems: 'center' }}>
+                        {/* Step 01 */}
+                        <div style={{
+                            background: 'linear-gradient(145deg, rgba(224,239,255,0.95) 0%, rgba(199,226,255,0.85) 100%)',
+                            border: '2px solid rgba(74,158,255,0.15)',
+                            borderRadius: 20, padding: '16px 14px',
+                            textAlign: 'center',
+                            boxShadow: '0 4px 16px rgba(74,158,255,0.08)',
+                            position: 'relative',
+                            transition: 'transform 0.3s ease',
                         }}>
-                            <div style={{ width: 38, height: 38, borderRadius: 12, background: 'rgba(255,255,255,0.85)', border: `1.5px solid ${item.border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: item.color, boxShadow: '0 2px 8px rgba(0,0,0,0.03)', flexShrink: 0, backdropFilter: 'blur(8px)' }}>
-                                {item.icon}
+                            <div style={{
+                                width: 52, height: 52, borderRadius: 16,
+                                background: 'rgba(255,255,255,0.9)',
+                                border: '2px solid rgba(74,158,255,0.12)',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                margin: '0 auto 10px',
+                                overflow: 'hidden',
+                                boxShadow: '0 3px 12px rgba(74,158,255,0.08)',
+                            }}>
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img src="/step-ticket.png" alt="เลือกหวย" style={{ width: 40, height: 40, objectFit: 'contain' }} />
                             </div>
-                            <div>
-                                <div style={{ fontSize: 9, fontWeight: 800, color: item.color, letterSpacing: '0.12em', textTransform: 'uppercase' }}>STEP {item.step}</div>
-                                <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', marginTop: 2 }}>{item.label}</div>
-                            </div>
+                            <div style={{ fontSize: 10, fontWeight: 800, color: '#3085f0', letterSpacing: '0.14em', marginBottom: 3 }}>STEP 01</div>
+                            <div style={{ fontSize: 15, fontWeight: 800, color: '#1a2740' }}>เลือกหวย</div>
                         </div>
-                    ))}
+
+                        {/* Arrow → */}
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <svg width="28" height="20" viewBox="0 0 28 20" fill="none">
+                                <path d="M2 10h18M16 4l6 6-6 6" stroke="#4a9eff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" opacity="0.6"/>
+                            </svg>
+                        </div>
+
+                        {/* Step 02 */}
+                        <div style={{
+                            background: 'linear-gradient(145deg, rgba(255,252,238,0.95) 0%, rgba(255,246,210,0.88) 100%)',
+                            border: '2px solid rgba(240,180,41,0.18)',
+                            borderRadius: 20, padding: '16px 14px',
+                            textAlign: 'center',
+                            boxShadow: '0 4px 16px rgba(240,180,41,0.08)',
+                            position: 'relative',
+                            transition: 'transform 0.3s ease',
+                        }}>
+                            <div style={{
+                                width: 52, height: 52, borderRadius: 16,
+                                background: 'rgba(255,255,255,0.9)',
+                                border: '2px solid rgba(240,180,41,0.12)',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                margin: '0 auto 10px',
+                                overflow: 'hidden',
+                                boxShadow: '0 3px 12px rgba(240,180,41,0.08)',
+                            }}>
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img src="/step-choose.png" alt="เลือกเลข" style={{ width: 40, height: 40, objectFit: 'contain' }} />
+                            </div>
+                            <div style={{ fontSize: 10, fontWeight: 800, color: '#b08008', letterSpacing: '0.14em', marginBottom: 3 }}>STEP 02</div>
+                            <div style={{ fontSize: 15, fontWeight: 800, color: '#1a2740' }}>เลือกเลข</div>
+                        </div>
+                    </div>
+
+                    {/* Connecting Arrow ↓ (right side) */}
+                    <div style={{ display: 'flex', justifyContent: 'right', paddingRight: '22%', height: 28 }}>
+                        <svg width="20" height="28" viewBox="0 0 20 28" fill="none">
+                            <path d="M10 2v18M4 16l6 6 6-6" stroke="#e6a817" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" opacity="0.5"/>
+                        </svg>
+                    </div>
+
+                    {/* Row 2: Step 4 ← Step 3 (zigzag: flow from right to left) */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 28px 1fr', gap: 0, alignItems: 'center' }}>
+                        {/* Step 04 (left position — end of flow) */}
+                        <div style={{
+                            background: 'linear-gradient(145deg, rgba(230,244,255,0.95) 0%, rgba(205,236,255,0.88) 100%)',
+                            border: '2px solid rgba(54,176,240,0.18)',
+                            borderRadius: 20, padding: '16px 14px',
+                            textAlign: 'center',
+                            boxShadow: '0 4px 16px rgba(54,176,240,0.08)',
+                            position: 'relative',
+                            transition: 'transform 0.3s ease',
+                        }}>
+                            <div style={{
+                                width: 52, height: 52, borderRadius: 16,
+                                background: 'rgba(255,255,255,0.9)',
+                                border: '2px solid rgba(54,176,240,0.12)',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                margin: '0 auto 10px',
+                                overflow: 'hidden',
+                                boxShadow: '0 3px 12px rgba(54,176,240,0.08)',
+                            }}>
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img src="/step-reward.png" alt="รอผลรางวัล" style={{ width: 40, height: 40, objectFit: 'contain' }} />
+                            </div>
+                            <div style={{ fontSize: 10, fontWeight: 800, color: '#0c7ab0', letterSpacing: '0.14em', marginBottom: 3 }}>STEP 04</div>
+                            <div style={{ fontSize: 15, fontWeight: 800, color: '#1a2740' }}>รอผลรางวัล</div>
+                        </div>
+
+                        {/* Arrow ← */}
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', transform: 'rotate(180deg)' }}>
+                            <svg width="28" height="20" viewBox="0 0 28 20" fill="none">
+                                <path d="M2 10h18M16 4l6 6-6 6" stroke="#22c970" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" opacity="0.5"/>
+                            </svg>
+                        </div>
+
+                        {/* Step 03 (right position — where down arrow from Step 2 leads) */}
+                        <div style={{
+                            background: 'linear-gradient(145deg, rgba(218,251,232,0.95) 0%, rgba(195,245,215,0.88) 100%)',
+                            border: '2px solid rgba(34,201,112,0.18)',
+                            borderRadius: 20, padding: '16px 14px',
+                            textAlign: 'center',
+                            boxShadow: '0 4px 16px rgba(34,201,112,0.08)',
+                            position: 'relative',
+                            transition: 'transform 0.3s ease',
+                        }}>
+                            <div style={{
+                                width: 52, height: 52, borderRadius: 16,
+                                background: 'rgba(255,255,255,0.9)',
+                                border: '2px solid rgba(34,201,112,0.12)',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                margin: '0 auto 10px',
+                                overflow: 'hidden',
+                                boxShadow: '0 3px 12px rgba(34,201,112,0.08)',
+                            }}>
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img src="/step-qrcode.png" alt="ชำระเงิน" style={{ width: 40, height: 40, objectFit: 'contain' }} />
+                            </div>
+                            <div style={{ fontSize: 10, fontWeight: 800, color: '#10a85c', letterSpacing: '0.14em', marginBottom: 3 }}>STEP 03</div>
+                            <div style={{ fontSize: 15, fontWeight: 800, color: '#1a2740' }}>ชำระเงิน</div>
+                        </div>
+                    </div>
                 </div>
             </div>
 

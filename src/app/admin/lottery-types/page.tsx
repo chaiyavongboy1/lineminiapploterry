@@ -3,44 +3,7 @@
 import { useEffect, useState } from 'react';
 import { formatCurrency } from '@/lib/utils';
 import type { LotteryType } from '@/types';
-import { Plus, Edit2, Trash2, Save, X, ChevronDown, ChevronUp } from 'lucide-react';
-
-const DEFAULT_LOTTERY_TYPES: LotteryType[] = [
-    {
-        id: 'powerball',
-        name: 'Powerball',
-        description: 'เลือก 5 จาก 69 + Powerball 1 จาก 26',
-        price_per_line: 250,
-        service_fee: 50,
-        max_number: 69,
-        max_special_number: 26,
-        numbers_to_pick: 5,
-        special_numbers_to_pick: 1,
-        estimated_jackpot: '$500 Million',
-        is_active: true,
-        draw_days: ['wednesday', 'saturday'],
-        next_draw_date: null,
-        image_url: null,
-        created_at: new Date().toISOString(),
-    },
-    {
-        id: 'mega-millions',
-        name: 'Mega Millions',
-        description: 'เลือก 5 จาก 70 + Mega Ball 1 จาก 24',
-        price_per_line: 250,
-        service_fee: 50,
-        max_number: 70,
-        max_special_number: 24,
-        numbers_to_pick: 5,
-        special_numbers_to_pick: 1,
-        estimated_jackpot: '$400 Million',
-        is_active: true,
-        draw_days: ['tuesday', 'friday'],
-        next_draw_date: null,
-        image_url: null,
-        created_at: new Date().toISOString(),
-    },
-];
+import { Edit2, Save, X, ChevronDown, ChevronUp, Loader2 } from 'lucide-react';
 
 export default function AdminLotteryTypesPage() {
     const [lotteryTypes, setLotteryTypes] = useState<LotteryType[]>([]);
@@ -49,64 +12,90 @@ export default function AdminLotteryTypesPage() {
     const [editForm, setEditForm] = useState<Partial<LotteryType>>({});
     const [expandedId, setExpandedId] = useState<string | null>(null);
     const [saved, setSaved] = useState(false);
+    const [saving, setSaving] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
         fetchLotteryTypes();
     }, []);
 
-    function fetchLotteryTypes() {
+    async function fetchLotteryTypes() {
+        setLoading(true);
+        setError(null);
         try {
-            const stored = localStorage.getItem('admin_lottery_types');
-            if (stored) {
-                let types: LotteryType[] = JSON.parse(stored);
+            const res = await fetch('/api/admin/lottery-types');
+            const result = await res.json();
 
-                // Fix: Mega Ball should be 1-24, migrate old cached data
-                types = types.map(t => {
-                    if ((t.id === 'mega-millions' || t.id === 'megamillions') && t.max_special_number === 25) {
-                        return { ...t, max_special_number: 24, description: (t.description || '').replace('1-25', '1-24').replace('จาก 25', 'จาก 24') };
-                    }
-                    return t;
-                });
-                localStorage.setItem('admin_lottery_types', JSON.stringify(types));
-
-                // Ensure only Powerball and Mega Millions exist for the simple view
-                const filtered = types.filter(t => ['powerball', 'mega-millions'].includes(t.id));
-                if (filtered.length === 0) {
-                    setLotteryTypes(DEFAULT_LOTTERY_TYPES);
-                    localStorage.setItem('admin_lottery_types', JSON.stringify(DEFAULT_LOTTERY_TYPES));
-                } else {
-                    setLotteryTypes(filtered);
-                }
+            if (result.success && result.data) {
+                setLotteryTypes(result.data as LotteryType[]);
             } else {
-                setLotteryTypes(DEFAULT_LOTTERY_TYPES);
-                localStorage.setItem('admin_lottery_types', JSON.stringify(DEFAULT_LOTTERY_TYPES));
+                setError(result.error || 'ไม่สามารถโหลดข้อมูลได้');
             }
-        } catch {
-            setLotteryTypes(DEFAULT_LOTTERY_TYPES);
+        } catch (err) {
+            console.error('Failed to fetch lottery types:', err);
+            setError('ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้');
+        } finally {
+            setLoading(false);
         }
-        setLoading(false);
     }
 
-    function saveLotteryTypes(types: LotteryType[]) {
-        setLotteryTypes(types);
-        localStorage.setItem('admin_lottery_types', JSON.stringify(types));
-        setSaved(true);
-        setTimeout(() => setSaved(false), 2000);
+    async function handleSave(id: string) {
+        setSaving(true);
+        setError(null);
+        try {
+            const res = await fetch('/api/admin/lottery-types', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id, ...editForm }),
+            });
+
+            const result = await res.json();
+
+            if (result.success && result.data) {
+                // Update local state with the response from DB
+                setLotteryTypes(prev =>
+                    prev.map(lt => lt.id === id ? { ...lt, ...result.data } : lt)
+                );
+                setSaved(true);
+                setTimeout(() => setSaved(false), 2000);
+                setEditing(null);
+            } else {
+                setError(result.error || 'บันทึกไม่สำเร็จ');
+            }
+        } catch (err) {
+            console.error('Failed to save lottery type:', err);
+            setError('ไม่สามารถบันทึกได้ กรุณาลองใหม่');
+        } finally {
+            setSaving(false);
+        }
     }
 
-    function handleSave(id: string) {
-        const updated = lotteryTypes.map(lt =>
-            lt.id === id ? { ...lt, ...editForm } : lt
-        );
-        saveLotteryTypes(updated);
-        setEditing(null);
-    }
+    async function toggleActive(id: string) {
+        const current = lotteryTypes.find(lt => lt.id === id);
+        if (!current) return;
 
-    function toggleActive(id: string) {
-        const updated = lotteryTypes.map(lt =>
-            lt.id === id ? { ...lt, is_active: !lt.is_active } : lt
-        );
-        saveLotteryTypes(updated);
+        try {
+            const res = await fetch('/api/admin/lottery-types', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id, is_active: !current.is_active }),
+            });
+
+            const result = await res.json();
+
+            if (result.success) {
+                setLotteryTypes(prev =>
+                    prev.map(lt => lt.id === id ? { ...lt, is_active: !lt.is_active } : lt)
+                );
+                setSaved(true);
+                setTimeout(() => setSaved(false), 2000);
+            } else {
+                setError(result.error || 'อัพเดทไม่สำเร็จ');
+            }
+        } catch (err) {
+            console.error('Failed to toggle active:', err);
+            setError('ไม่สามารถอัพเดทได้');
+        }
     }
 
     if (loading) return <div className="loading-spinner" />;
@@ -117,6 +106,17 @@ export default function AdminLotteryTypesPage() {
                 <h2 style={{ fontSize: 20, fontWeight: 700 }}>🎰 จัดการประเภทหวย</h2>
             </div>
 
+            {error && (
+                <div style={{
+                    background: 'rgba(239, 68, 68, 0.1)',
+                    border: '1px solid rgba(239, 68, 68, 0.3)',
+                    borderRadius: 10, padding: '8px 14px', marginBottom: 12,
+                    fontSize: 13, color: 'var(--danger)', textAlign: 'center',
+                }}>
+                    ❌ {error}
+                </div>
+            )}
+
             {saved && (
                 <div style={{
                     background: 'rgba(16, 185, 129, 0.1)',
@@ -124,7 +124,7 @@ export default function AdminLotteryTypesPage() {
                     borderRadius: 10, padding: '8px 14px', marginBottom: 12,
                     fontSize: 13, color: 'var(--success)', textAlign: 'center',
                 }}>
-                    ✅ บันทึกเรียบร้อย!
+                    ✅ บันทึกลงฐานข้อมูลเรียบร้อย! ราคาจะอัพเดทในหน้าผู้ใช้ทันที
                 </div>
             )}
 
@@ -165,10 +165,14 @@ export default function AdminLotteryTypesPage() {
                                     </div>
                                 </div>
                                 <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
-                                    <button className="btn btn-success" style={{ flex: 1, fontSize: 13 }} onClick={() => handleSave(lt.id)}>
-                                        <Save size={14} /> บันทึกการเปลี่ยนแปลง
+                                    <button className="btn btn-success" style={{ flex: 1, fontSize: 13 }} onClick={() => handleSave(lt.id)} disabled={saving}>
+                                        {saving ? (
+                                            <><Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} /> กำลังบันทึก...</>
+                                        ) : (
+                                            <><Save size={14} /> บันทึกลงฐานข้อมูล</>
+                                        )}
                                     </button>
-                                    <button className="btn btn-outline" style={{ fontSize: 13 }} onClick={() => setEditing(null)}>
+                                    <button className="btn btn-outline" style={{ fontSize: 13 }} onClick={() => setEditing(null)} disabled={saving}>
                                         <X size={14} /> ยกเลิก
                                     </button>
                                 </div>
