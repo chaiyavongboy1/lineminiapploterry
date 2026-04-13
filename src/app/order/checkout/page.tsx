@@ -102,39 +102,16 @@ function CheckoutContent() {
         loadSettings();
     }, []);
 
-    if (!data || !settings) {
-        return (
-            <div style={{ padding: '60px 0', textAlign: 'center' }}>
-                <div className="loading-spinner" />
-            </div>
-        );
-    }
-
-    const totalLines = data.lines.length;
-    const subtotal = totalLines * data.pricePerLine;
-    const serviceFee = totalLines * data.serviceFee;
-    const totalAmount = subtotal + serviceFee;
-
-    // Generate PromptPay QR
-    let qrData = '';
-    try {
-        qrData = generatePayload(settings.promptpayId, { amount: totalAmount });
-    } catch {
-        // If PromptPay generation fails, leave empty
-    }
-
-    const copyAccountNumber = () => {
-        navigator.clipboard.writeText(settings.accountNumber.replace(/-/g, ''));
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-    };
-
-
+    // useCallback MUST be before conditional returns (Rules of Hooks)
     const handleConfirmSlip = useCallback(async () => {
         // Guard: prevent double-clicks and re-submissions
-        if (!slipUpload.file || !data || submittingRef.current || orderCreated) return;
+        if (!slipUpload.file || !data || !settings || submittingRef.current || orderCreated) return;
         submittingRef.current = true;
         setSubmitting(true);
+
+        // Compute totalAmount inside callback to avoid stale closures
+        const lines = data.lines.length;
+        const calcTotal = lines * data.pricePerLine + lines * data.serviceFee;
 
         try {
             // Step 1: Create order in Supabase
@@ -170,8 +147,8 @@ function CheckoutContent() {
             const formData = new FormData();
             formData.append('orderId', createdOrder.id);
             formData.append('slip', slipUpload.file!);
-            formData.append('amount', String(totalAmount));
-            formData.append('bankName', settings?.bankName || '');
+            formData.append('amount', String(calcTotal));
+            formData.append('bankName', settings.bankName || '');
 
             const slipRes = await fetch('/api/upload-slip', {
                 method: 'POST',
@@ -198,7 +175,35 @@ function CheckoutContent() {
             setSubmitting(false);
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [data, slipUpload.file, orderCreated, totalAmount, settings]);
+    }, [data, slipUpload.file, orderCreated, settings]);
+
+    // Show loading while data/settings are not yet loaded
+    if (!data || !settings) {
+        return (
+            <div style={{ padding: '60px 0', textAlign: 'center' }}>
+                <div className="loading-spinner" />
+            </div>
+        );
+    }
+
+    const totalLines = data.lines.length;
+    const subtotal = totalLines * data.pricePerLine;
+    const serviceFee = totalLines * data.serviceFee;
+    const totalAmount = subtotal + serviceFee;
+
+    // Generate PromptPay QR
+    let qrData = '';
+    try {
+        qrData = generatePayload(settings.promptpayId, { amount: totalAmount });
+    } catch {
+        // If PromptPay generation fails, leave empty
+    }
+
+    const copyAccountNumber = () => {
+        navigator.clipboard.writeText(settings.accountNumber.replace(/-/g, ''));
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+    };
 
     // ============ STEP 1: PAYMENT ============
     if (step === 'payment') {
