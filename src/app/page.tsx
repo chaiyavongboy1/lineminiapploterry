@@ -139,8 +139,16 @@ export default function HomePage() {
         async function fetchLotteryTypes() {
             try {
                 const supabase = createClient();
-                const { data } = await supabase.from('lottery_types').select('*').eq('is_active', true).order('created_at', { ascending: true });
-                if (data && data.length > 0) setLotteryTypes(data as LotteryType[]);
+                const { data } = await supabase.from('lottery_types').select('*').eq('is_active', true).order('name', { ascending: true });
+                if (data && data.length > 0) {
+                    // Ensure Powerball is always first
+                    const sorted = [...data].sort((a, b) => {
+                        const aIsPB = a.name.toLowerCase().includes('powerball') ? 0 : 1;
+                        const bIsPB = b.name.toLowerCase().includes('powerball') ? 0 : 1;
+                        return aIsPB - bIsPB;
+                    });
+                    setLotteryTypes(sorted as LotteryType[]);
+                }
             } catch (err) {
                 console.error('Failed to fetch lottery types:', err);
             } finally { setLoading(false); }
