@@ -4,9 +4,23 @@ import { useEffect, useState, useCallback } from 'react';
 import { useLine } from '@/components/LineProvider';
 import { createClient } from '@/lib/supabase/client';
 import { formatDate } from '@/lib/utils';
-import { Trophy, Download, RefreshCw, Eye, AlertCircle, CheckCircle2, Clock } from 'lucide-react';
+import { Trophy, Download, RefreshCw, Eye, AlertCircle, CheckCircle2, Clock, ExternalLink, ShieldCheck, XCircle } from 'lucide-react';
 import Link from 'next/link';
 import type { LotteryType } from '@/types';
+
+interface PreviewResult {
+    drawDate: string;
+    numbers: number[];
+    specialNumber: number;
+    multiplier?: string;
+    alreadyExists: boolean;
+}
+
+interface PreviewData {
+    lotteryName: string;
+    sourceUrl: string;
+    results: PreviewResult[];
+}
 
 interface DrawResultWithStats {
     id: string;
@@ -59,6 +73,10 @@ export default function AdminDrawResultsPage() {
     
     // Edit state
     const [editModeId, setEditModeId] = useState<string | null>(null);
+
+    // Preview state (verification before save)
+    const [previewData, setPreviewData] = useState<PreviewData | null>(null);
+    const [confirming, setConfirming] = useState(false);
 
     const handleDelete = async (id: string) => {
         if (!confirm('ยืนยันลบผลรางวัลนี้? (ข้อมูลการตรวจรางวัลจะถูกลบรวดเร็วด้วย)')) return;
@@ -165,27 +183,75 @@ export default function AdminDrawResultsPage() {
         if (selectedLotteryId) loadResults();
     }, [selectedLotteryId, loadResults]);
 
-    // Auto-fetch from API
+    // Auto-fetch from API — now fetches PREVIEW first
     const handleAutoFetch = async (lotteryTypeId: string) => {
         setFetching(true);
         setFetchMessage('');
+        setPreviewData(null);
         try {
             const res = await fetch('/api/admin/draw-results/fetch', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ lottery_type_id: lotteryTypeId }),
+                body: JSON.stringify({ lottery_type_id: lotteryTypeId, preview: true }),
             });
             const result = await res.json();
-            if (result.success) {
-                setFetchMessage(`✅ ${result.message || `ดึงผลรางวัลใหม่ ${result.newCount} งวด`}`);
-                loadResults();
+            if (result.success && result.preview) {
+                const newResults = result.results.filter((r: PreviewResult) => !r.alreadyExists);
+                if (newResults.length === 0) {
+                    setFetchMessage('✅ ผลรางวัลเป็นข้อมูลล่าสุดแล้ว ไม่มีงวดใหม่');
+                } else {
+                    setPreviewData({
+                        lotteryName: result.lotteryName,
+                        sourceUrl: result.sourceUrl,
+                        results: result.results,
+                    });
+                }
             } else {
-                setFetchMessage(`❌ ${result.error}`);
+                setFetchMessage(`❌ ${result.error || 'ไม่สามารถดึงข้อมูลได้'}`);
             }
         } catch {
             setFetchMessage('❌ เกิดข้อผิดพลาดในการดึงข้อมูล');
         } finally {
             setFetching(false);
+        }
+    };
+
+    // Confirm and save previewed results
+    const handleConfirmSave = async () => {
+        if (!previewData) return;
+        const newResults = previewData.results.filter(r => !r.alreadyExists);
+        if (newResults.length === 0) {
+            setFetchMessage('✅ ไม่มีงวดใหม่ให้บันทึก');
+            setPreviewData(null);
+            return;
+        }
+
+        setConfirming(true);
+        try {
+            const res = await fetch('/api/admin/draw-results/fetch', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    lottery_type_id: selectedLotteryId,
+                    confirmed_results: newResults.map(r => ({
+                        drawDate: r.drawDate,
+                        numbers: r.numbers,
+                        specialNumber: r.specialNumber,
+                    })),
+                }),
+            });
+            const result = await res.json();
+            if (result.success) {
+                setFetchMessage(`✅ ${result.message || `บันทึกผลรางวัลใหม่ ${result.newCount} งวด`}`);
+                setPreviewData(null);
+                loadResults();
+            } else {
+                setFetchMessage(`❌ ${result.error}`);
+            }
+        } catch {
+            setFetchMessage('❌ เกิดข้อผิดพลาดในการบันทึก');
+        } finally {
+            setConfirming(false);
         }
     };
 
@@ -318,6 +384,215 @@ export default function AdminDrawResultsPage() {
                     color: fetchMessage.startsWith('❌') ? 'var(--danger)' : 'var(--success)',
                 }}>
                     {fetchMessage}
+                </div>
+            )}
+
+            {/* ── PREVIEW VERIFICATION PANEL ── */}
+            {previewData && (
+                <div style={{
+                    marginBottom: 20,
+                    borderRadius: 14,
+                    border: '2px solid rgba(245,158,11,0.4)',
+                    background: 'linear-gradient(135deg, rgba(245,158,11,0.06), rgba(245,158,11,0.01))',
+                    overflow: 'hidden',
+                }}>
+                    {/* Header */}
+                    <div style={{
+                        padding: '14px 18px',
+                        background: 'rgba(245,158,11,0.08)',
+                        borderBottom: '1px solid rgba(245,158,11,0.2)',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        flexWrap: 'wrap',
+                        gap: 8,
+                    }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <ShieldCheck size={18} color="#f59e0b" />
+                            <div>
+                                <div style={{ fontSize: 14, fontWeight: 700, color: '#d97706' }}>
+                                    ตรวจสอบผลรางวัลก่อนบันทึก
+                                </div>
+                                <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+                                    ข้อมูลจาก data.ny.gov — กรุณาตรวจสอบความถูกต้อง
+                                </div>
+                            </div>
+                        </div>
+                        <a
+                            href={previewData.sourceUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 4,
+                                fontSize: 11,
+                                color: 'var(--primary)',
+                                textDecoration: 'none',
+                                padding: '4px 10px',
+                                borderRadius: 6,
+                                background: 'rgba(59,89,152,0.08)',
+                                border: '1px solid rgba(59,89,152,0.15)',
+                                fontWeight: 600,
+                            }}
+                        >
+                            <ExternalLink size={12} />
+                            ดูผลจากแหล่งข้อมูล
+                        </a>
+                    </div>
+
+                    {/* Results List */}
+                    <div style={{ padding: '14px 18px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+                        {previewData.results.map((r, idx) => {
+                            const isExisting = r.alreadyExists;
+                            const isJackpot = previewData.lotteryName === 'Powerball';
+
+                            return (
+                                <div key={idx} style={{
+                                    padding: '12px 14px',
+                                    borderRadius: 10,
+                                    background: isExisting
+                                        ? 'rgba(0,0,0,0.02)'
+                                        : 'rgba(39,174,96,0.04)',
+                                    border: isExisting
+                                        ? '1px dashed var(--border)'
+                                        : '1px solid rgba(39,174,96,0.2)',
+                                    opacity: isExisting ? 0.6 : 1,
+                                }}>
+                                    {/* Date row */}
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                            <span style={{ fontSize: 13, fontWeight: 700 }}>
+                                                📅 {formatDate(r.drawDate)}
+                                            </span>
+                                            {r.multiplier && (
+                                                <span style={{
+                                                    fontSize: 10,
+                                                    background: 'rgba(59,89,152,0.1)',
+                                                    color: 'var(--primary)',
+                                                    padding: '2px 6px',
+                                                    borderRadius: 4,
+                                                    fontWeight: 600,
+                                                }}>
+                                                    x{r.multiplier}
+                                                </span>
+                                            )}
+                                        </div>
+                                        {isExisting ? (
+                                            <span style={{
+                                                fontSize: 10,
+                                                background: 'var(--bg)',
+                                                color: 'var(--text-muted)',
+                                                padding: '2px 8px',
+                                                borderRadius: 4,
+                                                border: '1px solid var(--border)',
+                                            }}>
+                                                มีอยู่แล้ว
+                                            </span>
+                                        ) : (
+                                            <span style={{
+                                                fontSize: 10,
+                                                background: 'rgba(39,174,96,0.12)',
+                                                color: 'var(--success)',
+                                                padding: '2px 8px',
+                                                borderRadius: 4,
+                                                fontWeight: 700,
+                                            }}>
+                                                ✨ งวดใหม่
+                                            </span>
+                                        )}
+                                    </div>
+
+                                    {/* Numbers */}
+                                    <div style={{ display: 'flex', gap: 5, alignItems: 'center', flexWrap: 'wrap' }}>
+                                        {r.numbers.map((num, i) => (
+                                            <span key={i} style={{
+                                                width: 36, height: 36, borderRadius: '50%',
+                                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                fontWeight: 700, fontSize: 14,
+                                                background: isExisting
+                                                    ? 'var(--bg)'
+                                                    : 'linear-gradient(135deg, var(--primary), var(--primary-light))',
+                                                color: isExisting ? 'var(--text-muted)' : '#fff',
+                                                border: isExisting ? '1px solid var(--border)' : 'none',
+                                                boxShadow: isExisting ? 'none' : '0 2px 6px rgba(59,89,152,0.25)',
+                                            }}>
+                                                {num}
+                                            </span>
+                                        ))}
+                                        <span style={{ color: 'var(--text-muted)', fontSize: 16, margin: '0 2px' }}>+</span>
+                                        <span style={{
+                                            width: 36, height: 36, borderRadius: '50%',
+                                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                            fontWeight: 700, fontSize: 14,
+                                            background: isExisting
+                                                ? 'var(--bg)'
+                                                : isJackpot
+                                                    ? 'linear-gradient(135deg, #e74c3c, #c0392b)'
+                                                    : 'linear-gradient(135deg, #f59e0b, #d97706)',
+                                            color: isExisting
+                                                ? 'var(--text-muted)'
+                                                : isJackpot ? '#fff' : '#1a1a1a',
+                                            border: isExisting ? '1px solid var(--border)' : 'none',
+                                            boxShadow: isExisting ? 'none'
+                                                : isJackpot ? '0 2px 6px rgba(231,76,60,0.3)' : '0 2px 6px rgba(217,119,6,0.3)',
+                                        }}>
+                                            {r.specialNumber}
+                                        </span>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div style={{
+                        padding: '12px 18px 16px',
+                        display: 'flex',
+                        gap: 8,
+                        borderTop: '1px solid rgba(245,158,11,0.15)',
+                    }}>
+                        <button
+                            className="btn btn-accent"
+                            onClick={handleConfirmSave}
+                            disabled={confirming || previewData.results.filter(r => !r.alreadyExists).length === 0}
+                            style={{
+                                flex: 1,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: 6,
+                                fontSize: 13,
+                                padding: '10px 16px',
+                                fontWeight: 700,
+                            }}
+                        >
+                            {confirming ? (
+                                <><RefreshCw size={14} className="spin" /> กำลังบันทึก...</>
+                            ) : (
+                                <><CheckCircle2 size={14} /> ✅ ยืนยัน — บันทึกผลรางวัล ({previewData.results.filter(r => !r.alreadyExists).length} งวดใหม่)</>
+                            )}
+                        </button>
+                        <button
+                            className="btn"
+                            onClick={() => setPreviewData(null)}
+                            disabled={confirming}
+                            style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: 4,
+                                fontSize: 13,
+                                padding: '10px 16px',
+                                background: 'var(--bg)',
+                                border: '1px solid var(--border)',
+                                color: 'var(--text-muted)',
+                            }}
+                        >
+                            <XCircle size={14} />
+                            ยกเลิก
+                        </button>
+                    </div>
                 </div>
             )}
 
