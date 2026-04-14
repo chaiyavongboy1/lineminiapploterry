@@ -8,6 +8,9 @@ export async function GET(request: NextRequest) {
         const { searchParams } = new URL(request.url);
         const status = searchParams.get('status');
         const lineUserId = searchParams.get('adminLineUserId');
+        const page = parseInt(searchParams.get('page') || '1', 10);
+        const limit = parseInt(searchParams.get('limit') || '20', 10);
+        const offset = (page - 1) * limit;
 
         if (!lineUserId) {
             return NextResponse.json<ApiResponse>(
@@ -32,16 +35,27 @@ export async function GET(request: NextRequest) {
             );
         }
 
+        // Count total
+        let countQuery = supabase
+            .from('orders')
+            .select('id', { count: 'exact', head: true });
+        if (status && status !== 'all') {
+            countQuery = countQuery.eq('status', status);
+        }
+        const { count: totalCount } = await countQuery;
+
+        // Fetch paginated orders
         let query = supabase
             .from('orders')
             .select(`
-        *,
-        user:users!orders_user_id_fkey(id, display_name, picture_url, line_user_id),
-        lottery_type:lottery_types(id, name),
-        order_lines(*),
-        payment_slips(*)
-      `)
-            .order('created_at', { ascending: false });
+                *,
+                user:users!orders_user_id_fkey(id, display_name, picture_url, line_user_id),
+                lottery_type:lottery_types(id, name),
+                order_lines(*),
+                payment_slips(id, image_url)
+            `)
+            .order('created_at', { ascending: false })
+            .range(offset, offset + limit - 1);
 
         if (status && status !== 'all') {
             query = query.eq('status', status);
@@ -60,7 +74,8 @@ export async function GET(request: NextRequest) {
         return NextResponse.json<ApiResponse>({
             success: true,
             data: orders,
-        });
+            pagination: { page, limit, total: totalCount || 0 },
+        } as any);
     } catch (err) {
         console.error('Admin orders error:', err);
         return NextResponse.json<ApiResponse>(

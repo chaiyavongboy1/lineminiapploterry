@@ -8,6 +8,7 @@ import { ORDER_STATUS_LABELS } from '@/types';
 import type { Order, OrderStatus, LotteryType } from '@/types';
 import Link from 'next/link';
 import { Eye, Clock, CheckCircle, XCircle, AlertCircle, FileText, Package } from 'lucide-react';
+import Pagination from '@/components/Pagination';
 
 const statusBadgeClass: Record<OrderStatus, string> = {
     pending_payment: 'badge-pending',
@@ -36,6 +37,9 @@ export default function AdminOrdersPage() {
     const [filter, setFilter] = useState('all');
     const [lotteryTypes, setLotteryTypes] = useState<LotteryType[]>([]);
     const [selectedLotteryId, setSelectedLotteryId] = useState<string>('all');
+    const [currentPage, setCurrentPage] = useState(1);
+    const [totalItems, setTotalItems] = useState(0);
+    const ITEMS_PER_PAGE = 10;
 
     // Load lottery types
     useEffect(() => {
@@ -47,17 +51,24 @@ export default function AdminOrdersPage() {
         loadTypes();
     }, []);
 
+    // Fetch orders with server-side pagination
     useEffect(() => {
         if (!profile?.userId) return;
 
         async function fetchOrders() {
+            setLoading(true);
             try {
-                const res = await fetch(
-                    `/api/admin/orders?adminLineUserId=${profile!.userId}&status=${filter}`
-                );
+                const params = new URLSearchParams({
+                    adminLineUserId: profile!.userId,
+                    status: filter,
+                    page: String(currentPage),
+                    limit: String(ITEMS_PER_PAGE),
+                });
+                const res = await fetch(`/api/admin/orders?${params}`);
                 const result = await res.json();
                 if (result.success && result.data) {
                     setOrders(result.data);
+                    setTotalItems(result.pagination?.total || 0);
                 }
             } catch (err) {
                 console.warn('Failed to fetch from API:', err);
@@ -67,22 +78,10 @@ export default function AdminOrdersPage() {
         }
 
         fetchOrders();
-    }, [profile, filter]);
+    }, [profile, filter, currentPage]);
 
-    // Filter by status
-    const statusFiltered = filter === 'all'
-        ? orders
-        : orders.filter(o => o.status === filter);
-
-    // Then filter by lottery type
-    const filteredOrders = selectedLotteryId === 'all'
-        ? statusFiltered
-        : statusFiltered.filter(o => o.lottery_type_id === selectedLotteryId);
-
-    // Count per lottery type for badges
-    const countByLottery = (ltId: string) => statusFiltered.filter(o => o.lottery_type_id === ltId).length;
-    const pendingReviewCount = (ltId: string) =>
-        orders.filter(o => o.status === 'pending_review' && (ltId === 'all' || o.lottery_type_id === ltId)).length;
+    const pendingReviewCount = () =>
+        0; // Count is now handled server-side
 
     const filters = [
         { value: 'all', label: 'ทั้งหมด' },
@@ -103,7 +102,7 @@ export default function AdminOrdersPage() {
                     padding: '2px 0',
                 }}>
                     <button
-                        onClick={() => setSelectedLotteryId('all')}
+                        onClick={() => { setSelectedLotteryId('all'); setCurrentPage(1); }}
                         style={{
                             padding: '8px 16px', borderRadius: 12, fontSize: 13, fontWeight: 600,
                             border: selectedLotteryId === 'all' ? '2px solid var(--primary)' : '1px solid var(--border)',
@@ -113,7 +112,7 @@ export default function AdminOrdersPage() {
                             boxShadow: selectedLotteryId === 'all' ? '0 2px 8px rgba(59,89,152,0.25)' : 'none',
                         }}
                     >
-                        🎰 ทั้งหมด ({statusFiltered.length})
+                        🎰 ทั้งหมด
                     </button>
                     {lotteryTypes.map(lt => {
                         const isActive = selectedLotteryId === lt.id;
@@ -125,13 +124,12 @@ export default function AdminOrdersPage() {
                         const activeShadow = isPowerball
                             ? '0 2px 8px rgba(231,76,60,0.3)'
                             : '0 2px 8px rgba(245,158,11,0.3)';
-                        const count = countByLottery(lt.id);
-                        const pending = pendingReviewCount(lt.id);
+
 
                         return (
                             <button
                                 key={lt.id}
-                                onClick={() => setSelectedLotteryId(lt.id)}
+                                onClick={() => { setSelectedLotteryId(lt.id); setCurrentPage(1); }}
                                 style={{
                                     padding: '8px 16px', borderRadius: 12, fontSize: 13, fontWeight: 600,
                                     border: isActive ? 'none' : '1px solid var(--border)',
@@ -142,18 +140,7 @@ export default function AdminOrdersPage() {
                                     position: 'relative',
                                 }}
                             >
-                                {emoji} {lt.name} ({count})
-                                {pending > 0 && !isActive && (
-                                    <span style={{
-                                        position: 'absolute', top: -4, right: -4,
-                                        width: 18, height: 18, borderRadius: '50%',
-                                        background: 'var(--danger)', color: '#fff',
-                                        fontSize: 10, fontWeight: 700,
-                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    }}>
-                                        {pending}
-                                    </span>
-                                )}
+                                {emoji} {lt.name}
                             </button>
                         );
                     })}
@@ -166,7 +153,7 @@ export default function AdminOrdersPage() {
                     <button
                         key={f.value}
                         className={`tab ${filter === f.value ? 'active' : ''}`}
-                        onClick={() => setFilter(f.value)}
+                        onClick={() => { setFilter(f.value); setCurrentPage(1); }}
                     >
                         {f.label}
                         {f.value === 'pending_review' && orders.filter(o => o.status === 'pending_review').length > 0 && (
@@ -187,13 +174,14 @@ export default function AdminOrdersPage() {
                         <div key={i} className="skeleton" style={{ height: 120, marginBottom: 12 }} />
                     ))}
                 </div>
-            ) : filteredOrders.length === 0 ? (
+            ) : orders.length === 0 ? (
                 <div className="card" style={{ textAlign: 'center', padding: 40 }}>
                     <p style={{ color: 'var(--text-muted)' }}>ไม่มีออร์เดอร์</p>
                 </div>
             ) : (
+                <>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                    {filteredOrders.map((order, index) => {
+                    {orders.map((order, index) => {
                         const lotteryType = order.lottery_type as unknown as { name: string } | null;
                         const isPowerball = lotteryType?.name === 'Powerball';
 
@@ -296,6 +284,15 @@ export default function AdminOrdersPage() {
                         );
                     })}
                 </div>
+
+                    {/* Pagination */}
+                    <Pagination
+                        currentPage={currentPage}
+                        totalItems={totalItems}
+                        itemsPerPage={ITEMS_PER_PAGE}
+                        onPageChange={(page) => { setCurrentPage(page); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                    />
+                </>
             )}
         </div>
     );

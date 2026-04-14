@@ -179,7 +179,7 @@ function PaymentContent() {
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                         <span style={{ color: 'var(--text-muted)', fontSize: 14 }}>ชื่อบัญชี</span>
-                        <span style={{ fontWeight: 600, fontSize: 14 }}>{bankSettings.accountHolderName || 'American Lottery TH'}</span>
+                        <span style={{ fontWeight: 600, fontSize: 14 }}>{bankSettings.accountHolderName || 'America Lottery TH'}</span>
                     </div>
                 </div>
             </div>

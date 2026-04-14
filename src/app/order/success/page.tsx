@@ -83,7 +83,7 @@ function SuccessContent() {
             </div>
 
             <h1 style={{ fontSize: 24, fontWeight: 800, marginBottom: 6 }}>
-                สั่งซื้อสำเร็จ! 🎉
+                ฝากซื้อสำเร็จ! 🎉
             </h1>
             <p style={{ color: 'var(--text-muted)', fontSize: 14, marginBottom: 24 }}>
                 รอแอดมินตรวจสอบสลิปการโอน
@@ -173,7 +173,7 @@ function SuccessContent() {
                     📋 ดูประวัติออร์เดอร์
                 </Link>
                 <Link href="/" className="btn btn-outline btn-full" style={{ fontSize: 15, padding: '14px 24px' }}>
-                    🎫 ซื้อหวยเพิ่ม
+                    🎫 ฝากซื้อ Lottery เพิ่ม
                 </Link>
             </div>
         </div>

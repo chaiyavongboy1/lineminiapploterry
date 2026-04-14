@@ -152,6 +152,10 @@ export async function GET(request: NextRequest) {
     try {
         const { searchParams } = new URL(request.url);
         const lineUserId = searchParams.get('lineUserId');
+        const page = parseInt(searchParams.get('page') || '1', 10);
+        const limit = parseInt(searchParams.get('limit') || '20', 10);
+        const lotteryTypeId = searchParams.get('lotteryTypeId');
+        const offset = (page - 1) * limit;
 
         if (!lineUserId) {
             return NextResponse.json<ApiResponse>(
@@ -176,17 +180,35 @@ export async function GET(request: NextRequest) {
             );
         }
 
-        const { data: orders, error } = await supabase
+        // Count total orders for pagination
+        let countQuery = supabase
+            .from('orders')
+            .select('id', { count: 'exact', head: true })
+            .eq('user_id', user.id);
+        if (lotteryTypeId) {
+            countQuery = countQuery.eq('lottery_type_id', lotteryTypeId);
+        }
+        const { count: totalCount } = await countQuery;
+
+        // Fetch paginated orders
+        let query = supabase
             .from('orders')
             .select(`
-        *,
-        lottery_type:lottery_types(*),
-        order_lines(*),
-        payment_slips(*),
-        ticket_images(*)
-      `)
+                *,
+                lottery_type:lottery_types(id, name),
+                order_lines(*),
+                payment_slips(id, image_url),
+                ticket_images(id, image_url)
+            `)
             .eq('user_id', user.id)
-            .order('created_at', { ascending: false });
+            .order('created_at', { ascending: false })
+            .range(offset, offset + limit - 1);
+
+        if (lotteryTypeId) {
+            query = query.eq('lottery_type_id', lotteryTypeId);
+        }
+
+        const { data: orders, error } = await query;
 
         if (error) {
             console.error('Get orders error:', error);
@@ -199,7 +221,8 @@ export async function GET(request: NextRequest) {
         return NextResponse.json<ApiResponse>({
             success: true,
             data: orders,
-        });
+            pagination: { page, limit, total: totalCount || 0 },
+        } as any);
     } catch (err) {
         console.error('Get orders error:', err);
         return NextResponse.json<ApiResponse>(

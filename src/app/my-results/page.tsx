@@ -5,6 +5,7 @@ import { useLine } from '@/components/LineProvider';
 import { createClient } from '@/lib/supabase/client';
 import { formatCurrency, formatDateTime } from '@/lib/utils';
 import { Trophy, Calendar, DollarSign, ArrowLeft, FileText, ChevronDown, ChevronUp, Image as ImageIcon } from 'lucide-react';
+import Pagination, { paginateItems } from '@/components/Pagination';
 import LotteryLogo from '@/components/LotteryLogo';
 import Modal from '@/components/Modal';
 import Link from 'next/link';
@@ -36,6 +37,7 @@ export default function MyResultsPage() {
     const [results, setResults] = useState<ResultItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [expandedResult, setExpandedResult] = useState<string | null>(null);
+    const [currentPage, setCurrentPage] = useState(1);
     const [taxRate, setTaxRate] = useState<number>(0);
     const [exchangeRate, setExchangeRate] = useState<number>(0);
     const [showImageModal, setShowImageModal] = useState(false);
@@ -155,12 +157,13 @@ export default function MyResultsPage() {
                         เมื่อมีการออกรางวัลและเลขของคุณตรง ผลจะแสดงที่นี่
                     </p>
                     <Link href="/" className="btn btn-primary" style={{ fontSize: 14 }}>
-                        ไปซื้อหวย
+                        ไปฝากซื้อ Lottery
                     </Link>
                 </div>
             ) : (
+                <>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                    {results.map((result, idx) => {
+                    {paginateItems(results, currentPage, 10).map((result, idx) => {
                         const isExpanded = expandedResult === result.draw_result.id;
                         const totalPrize = result.order_line_results.reduce(
                             (sum, r) => sum + (r.prize_amount || 0), 0
@@ -486,6 +489,15 @@ export default function MyResultsPage() {
                         );
                     })}
                 </div>
+
+                    {/* Pagination */}
+                    <Pagination
+                        currentPage={currentPage}
+                        totalItems={results.length}
+                        itemsPerPage={10}
+                        onPageChange={(page) => { setCurrentPage(page); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                    />
+                </>
             )}
 
             {/* Image Modal */}

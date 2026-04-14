@@ -55,7 +55,7 @@ export default function LotteryPage() {
         }
 
         fetchLottery();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [params.type]);
 
     // Update line count
@@ -260,7 +260,7 @@ export default function LotteryPage() {
     if (!lottery) {
         return (
             <div style={{ padding: '60px 0', textAlign: 'center' }}>
-                <p>ไม่พบข้อมูลหวย</p>
+                <p>ไม่พบข้อมูล Lottery</p>
                 <Link href="/" className="btn btn-primary" style={{ marginTop: 16, display: 'inline-flex' }}>กลับหน้าหลัก</Link>
             </div>
         );
@@ -357,7 +357,7 @@ export default function LotteryPage() {
                     disabled={!allComplete || !isLoggedIn}
                 >
                     <ShoppingCart size={18} />
-                    {checkingProfile ? 'กำลังตรวจสอบ...' : `สั่งซื้อ ${selections.length} Lines — ${formatCurrency(totalPrice)}`}
+                    {checkingProfile ? 'กำลังตรวจสอบ...' : `ฝากซื้อ ${selections.length} Lines — ${formatCurrency(totalPrice)}`}
                 </button>
             </div>
 

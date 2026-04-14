@@ -225,7 +225,7 @@ export default function HomePage() {
                                 WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
                                 letterSpacing: '-0.02em', lineHeight: 1.15,
                             }}>
-                                American Lottery
+                                America Lottery
                             </h1>
                             <p style={{ fontSize: 13, color: 'var(--blue-600)', fontWeight: 600, marginTop: 3, display: 'flex', alignItems: 'center', gap: 5 }}>
                                 บริการรับฝากซื้อ USA Lottery ผ่าน LINE
@@ -391,7 +391,7 @@ export default function HomePage() {
                                 boxShadow: '0 3px 12px rgba(74,158,255,0.08)',
                             }}>
                                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                                <img src="/step-ticket.png" alt="เลือกหวย" style={{ width: 40, height: 40, objectFit: 'contain' }} />
+                                <img src="/step-ticket.png" alt="เลือก Lottery" style={{ width: 40, height: 40, objectFit: 'contain' }} />
                             </div>
                             <div style={{ fontSize: 10, fontWeight: 800, color: '#3085f0', letterSpacing: '0.14em', marginBottom: 3 }}>STEP 01</div>
                             <div style={{ fontSize: 15, fontWeight: 800, color: '#1a2740' }}>เลือก Lottery</div>
@@ -551,22 +551,27 @@ export default function HomePage() {
                                 {[
                                     { label: 'ราคาต่อ Line', value: `฿${selectedLottery.price_per_line.toLocaleString()}`, icon: '💰' },
                                     { label: 'ค่าบริการ',   value: `฿${selectedLottery.service_fee.toLocaleString()}`,    icon: '🛎️' },
-                                    { label: 'เลือกเลข', value: selectedLottery.description || `${selectedLottery.numbers_to_pick} ตัว (1-${selectedLottery.max_number})${selectedLottery.max_special_number ? ` + พิเศษ (1-${selectedLottery.max_special_number})` : ''}`, icon: '🔢' },
+                                    { label: '', value: selectedLottery.description || `${selectedLottery.numbers_to_pick} ตัว (1-${selectedLottery.max_number})${selectedLottery.max_special_number ? ` + พิเศษ (1-${selectedLottery.max_special_number})` : ''}`, icon: '🔢' },
                                 ].map((row, i, arr) => (
                                     <div key={i} style={{
-                                        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                                        display: 'flex', justifyContent: 'space-between', alignItems: row.label ? 'center' : 'flex-start',
                                         paddingBottom: i < arr.length - 1 ? 12 : 0,
                                         marginBottom: i < arr.length - 1 ? 12 : 0,
                                         borderBottom: i < arr.length - 1 ? '1px solid rgba(74,158,255,0.05)' : 'none',
                                     }}>
-                                        <span style={{ fontSize: 13, color: 'var(--text-muted)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}><span>{row.icon}</span>{row.label}</span>
-                                        <span style={{ fontSize: 14, fontWeight: 800, color: 'var(--text)' }}>{row.value}</span>
+                                        <span style={{ fontSize: 13, color: 'var(--text-muted)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
+                                            <span>{row.icon}</span>
+                                            {row.label && <span>{row.label}</span>}
+                                        </span>
+                                        <span style={{ fontSize: row.label ? 14 : 13, fontWeight: row.label ? 800 : 700, color: 'var(--text)', flex: row.label ? 'none' : 1, textAlign: row.label ? 'right' : 'left', marginLeft: row.label ? 16 : 6 }}>
+                                            {row.value}
+                                        </span>
                                     </div>
                                 ))}
                             </div>
 
                             <button className="btn btn-primary btn-full" style={{ padding: '16px 24px', fontSize: 15, fontWeight: 800, borderRadius: 16 }} onClick={handleProceed} disabled={!isLoggedIn}>
-                                <Ticket size={18} /> เลือกเลข →
+                                <Ticket size={18} /> ฝากซื้อ →
                             </button>
 
                             {!isLoggedIn && (

@@ -240,7 +240,7 @@ export default function AdminOrderDetailPage() {
                         <span style={{ fontSize: 14 }}>{order.total_lines}</span>
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                        <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>สั่งซื้อเมื่อ</span>
+                        <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>สร้างออร์เดอร์เมื่อ</span>
                         <span style={{ fontSize: 14 }}>{formatDateTime(order.created_at)}</span>
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: 8, borderTop: '1px solid var(--border)' }}>
@@ -429,10 +429,10 @@ export default function AdminOrderDetailPage() {
                     border: '2px solid rgba(37, 99, 235, 0.2)',
                 }}>
                     <h3 style={{ fontSize: 15, fontWeight: 600, marginBottom: 6 }}>
-                        🎫 ซื้อหวยจริงและแนบรูป
+                        🎫 ซื้อ Lottery จริงและแนบรูป
                     </h3>
                     <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 16 }}>
-                        ไปซื้อหวยตามเลขที่ลูกค้าเลือก แล้วถ่ายรูป Lottery แนบ
+                        ไปซื้อ Lottery ตามเลขที่ลูกค้าเลือก แล้วถ่ายรูป Lottery แนบ
                     </p>
 
                     {/* Multi-Ticket Upload */}

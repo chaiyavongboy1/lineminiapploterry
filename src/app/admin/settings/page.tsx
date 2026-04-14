@@ -197,7 +197,7 @@ export default function AdminSettingsPage() {
                         <input
                             className="input"
                             type="text"
-                            placeholder="เช่น บริษัท American Lottery TH"
+                            placeholder="เช่น บริษัท America Lottery TH"
                             value={settings.accountHolderName}
                             onChange={e => update('accountHolderName', e.target.value)}
                         />

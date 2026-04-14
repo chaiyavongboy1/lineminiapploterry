@@ -7,6 +7,7 @@ import { formatDate } from '@/lib/utils';
 import { Trophy, Download, RefreshCw, Eye, AlertCircle, CheckCircle2, Clock, ExternalLink, ShieldCheck, XCircle } from 'lucide-react';
 import Link from 'next/link';
 import type { LotteryType } from '@/types';
+import Pagination from '@/components/Pagination';
 
 interface PreviewResult {
     drawDate: string;
@@ -77,6 +78,7 @@ export default function AdminDrawResultsPage() {
     // Preview state (verification before save)
     const [previewData, setPreviewData] = useState<PreviewData | null>(null);
     const [confirming, setConfirming] = useState(false);
+    const [currentPage, setCurrentPage] = useState(1);
 
     const handleDelete = async (id: string) => {
         if (!confirm('ยืนยันลบผลรางวัลนี้? (ข้อมูลการตรวจรางวัลจะถูกลบรวดเร็วด้วย)')) return;
@@ -135,7 +137,10 @@ export default function AdminDrawResultsPage() {
         loadLotteryTypes();
     }, []);
 
-    // Load draw results — via Supabase client (same pattern)
+    const [totalItems, setTotalItems] = useState(0);
+    const ITEMS_PER_PAGE = 10;
+
+    // Load draw results — via API (batched stats, server-side pagination)
     const loadResults = useCallback(async () => {
         if (!selectedLotteryId) {
             setLoading(false);
@@ -143,45 +148,30 @@ export default function AdminDrawResultsPage() {
         }
         setLoading(true);
         try {
-            const supabase = createClient();
-            const { data, error } = await supabase
-                .from('draw_results')
-                .select(`*, lottery_type:lottery_types(id, name)`)
-                .eq('lottery_type_id', selectedLotteryId)
-                .order('draw_date', { ascending: false })
-                .limit(50);
-
-            if (error) throw error;
-
-            // For each draw result, count winners
-            const resultsWithStats = await Promise.all(
-                (data || []).map(async (draw) => {
-                    const { data: lineResults } = await supabase
-                        .from('order_line_results')
-                        .select('is_winner, prize_amount')
-                        .eq('draw_result_id', draw.id);
-
-                    return {
-                        ...draw,
-                        totalChecked: lineResults?.length || 0,
-                        totalWinners: lineResults?.filter((r: { is_winner: boolean }) => r.is_winner).length || 0,
-                        totalPrizeAmount: lineResults?.reduce((sum: number, r: { prize_amount: number }) => sum + (r.prize_amount || 0), 0) || 0,
-                    };
-                })
-            );
-
-            setDrawResults(resultsWithStats as DrawResultWithStats[]);
+            const params = new URLSearchParams({
+                lottery_type_id: selectedLotteryId,
+                page: String(currentPage),
+                limit: String(ITEMS_PER_PAGE),
+            });
+            const res = await fetch(`/api/admin/draw-results?${params}`);
+            const result = await res.json();
+            if (result.success) {
+                setDrawResults(result.data as DrawResultWithStats[]);
+                setTotalItems(result.pagination?.total || 0);
+            } else {
+                setDrawResults([]);
+            }
         } catch (err) {
-            console.warn('Failed to load results from Supabase:', err);
+            console.warn('Failed to load results:', err);
             setDrawResults([]);
         } finally {
             setLoading(false);
         }
-    }, [selectedLotteryId]);
+    }, [selectedLotteryId, currentPage]);
 
     useEffect(() => {
         if (selectedLotteryId) loadResults();
-    }, [selectedLotteryId, loadResults]);
+    }, [selectedLotteryId, currentPage, loadResults]);
 
     // Auto-fetch from API — now fetches PREVIEW first
     const handleAutoFetch = async (lotteryTypeId: string) => {
@@ -701,6 +691,7 @@ export default function AdminDrawResultsPage() {
                     </p>
                 </div>
             ) : (
+                <>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                     {drawResults.map((draw, index) => {
                         const lotteryName = (draw.lottery_type as unknown as { name: string })?.name || '';
@@ -863,6 +854,15 @@ export default function AdminDrawResultsPage() {
                         );
                     })}
                 </div>
+
+                    {/* Pagination */}
+                    <Pagination
+                        currentPage={currentPage}
+                        totalItems={totalItems}
+                        itemsPerPage={ITEMS_PER_PAGE}
+                        onPageChange={(page) => { setCurrentPage(page); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                    />
+                </>
             )}
         </div>
     );

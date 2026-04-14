@@ -253,7 +253,7 @@ export async function notifyUserWonPrize(
     const flex = buildNotificationFlex(
         '🏆', 'ยินดีด้วย! คุณถูกรางวัล!',
         [
-            { label: 'หวย', value: lotteryName },
+            { label: 'Lottery', value: lotteryName },
             { label: 'งวด', value: drawDate },
             { label: 'รางวัล', value: prizeName, color: '#fbbf24' },
             { label: 'มูลค่า', value: `$${prizeAmount.toLocaleString()}`, color: '#34d399' },

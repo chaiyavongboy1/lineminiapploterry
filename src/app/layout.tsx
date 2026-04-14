@@ -4,11 +4,11 @@ import { LineProvider } from "@/components/LineProvider";
 import BottomNav from "@/components/BottomNav";
 
 export const metadata: Metadata = {
-  title: "American Lottery | ซื้อหวยอเมริกาออนไลน์",
-  description: "ซื้อหวย Powerball, Mega Millions และหวยอเมริกาอื่นๆ ได้ง่ายๆ ผ่าน LINE",
+  title: "America Lottery | ฝากซื้อลอตเตอรี่ที่อเมริกา",
+  description: "บริการรับฝากซื้อ Powerball, Mega Millions และ Lottery อเมริกาอื่นๆ ได้ง่ายๆ ผ่าน LINE",
   openGraph: {
-    title: "American Lottery | ซื้อหวยอเมริกาออนไลน์",
-    description: "ซื้อหวย Powerball, Mega Millions ผ่าน LINE ได้แล้ววันนี้!",
+    title: "America Lottery | ฝากซื้อลอตเตอรี่ที่อเมริกา",
+    description: "ฝากซื้อ Powerball, Mega Millions ผ่าน LINE ได้แล้ววันนี้!",
     type: "website",
   },
 };

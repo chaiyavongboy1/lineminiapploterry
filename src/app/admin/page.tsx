@@ -75,7 +75,7 @@ export default function AdminDashboard() {
     const quickActions = [
         { label: 'ตรวจสลิป',   href: '/admin/orders',       icon: <ClipboardList size={20} />, cls: 'icon-box-grad-blue' },
         { label: 'ธนาคาร',     href: '/admin/settings',     icon: <CreditCard size={20} />,    cls: 'icon-box-grad-sky' },
-        { label: 'จัดการหวย',  href: '/admin/lottery-types', icon: <Ticket size={20} />,        cls: 'icon-box-grad-amber' },
+        { label: 'จัดการ Lottery',  href: '/admin/lottery-types', icon: <Ticket size={20} />,        cls: 'icon-box-grad-amber' },
         { label: 'เนื้อหา',    href: '/admin/content',      icon: <BookOpen size={20} />,      cls: 'icon-box-grad-emerald' },
         { label: 'ผลรางวัล',   href: '/admin/draw-results', icon: <BarChart2 size={20} />,     cls: 'icon-box-grad-ocean' },
         { label: 'ตั้งค่า',    href: '/admin/settings',     icon: <Settings size={20} />,      cls: 'icon-box-grad-blue' },

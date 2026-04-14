@@ -76,7 +76,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
         { href: '/admin/orders',       icon: <FileText size={16} />,       label: 'ออร์เดอร์' },
         { href: '/admin/draw-results', icon: <Trophy size={16} />,         label: 'ผลรางวัล' },
         { href: '/admin/content',      icon: <BookOpen size={16} />,       label: 'เนื้อหา' },
-        { href: '/admin/lottery-types', icon: <Ticket size={16} />,        label: 'จัดการหวย' },
+        { href: '/admin/lottery-types', icon: <Ticket size={16} />,        label: 'จัดการ Lottery' },
         { href: '/admin/settings',     icon: <Settings size={16} />,       label: 'ตั้งค่า' },
         { href: '/admin/prize-tiers',  icon: <Coins size={16} />,          label: 'เงินรางวัล' },
     ];

@@ -2,11 +2,13 @@
 
 import React, { useEffect, useState } from 'react';
 import { useLine } from '@/components/LineProvider';
+import { createClient } from '@/lib/supabase/client';
 import { formatCurrency, formatDateTime } from '@/lib/utils';
-import { ArrowLeft, Ticket, History, FileText, Clock, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
-import type { Order, OrderStatus } from '@/types';
+import { ArrowLeft, Ticket, FileText, Clock, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
+import type { Order, OrderStatus, LotteryType } from '@/types';
 import { ORDER_STATUS_LABELS } from '@/types';
 import Link from 'next/link';
+import Pagination from '@/components/Pagination';
 
 const statusIcons: Record<OrderStatus, React.ReactNode> = {
     pending_payment: <Clock size={14} />,
@@ -33,7 +35,23 @@ export default function OrderHistoryPage() {
     const [orders, setOrders] = useState<Order[]>([]);
     const [loading, setLoading] = useState(true);
     const [expandedOrders, setExpandedOrders] = useState<Record<string, boolean>>({});
+    const [lotteryTypes, setLotteryTypes] = useState<LotteryType[]>([]);
+    const [selectedLotteryId, setSelectedLotteryId] = useState<string>('all');
+    const [currentPage, setCurrentPage] = useState(1);
+    const [totalItems, setTotalItems] = useState(0);
+    const ITEMS_PER_PAGE = 10;
 
+    // Load lottery types
+    useEffect(() => {
+        async function loadTypes() {
+            const supabase = createClient();
+            const { data } = await supabase.from('lottery_types').select('*').eq('is_active', true).order('name');
+            if (data) setLotteryTypes(data);
+        }
+        loadTypes();
+    }, []);
+
+    // Fetch orders with server-side pagination
     useEffect(() => {
         if (!isReady) return;
         if (!profile?.userId) {
@@ -42,11 +60,21 @@ export default function OrderHistoryPage() {
         }
 
         async function fetchOrders() {
+            setLoading(true);
             try {
-                const res = await fetch(`/api/orders?lineUserId=${profile!.userId}`);
+                const params = new URLSearchParams({
+                    lineUserId: profile!.userId,
+                    page: String(currentPage),
+                    limit: String(ITEMS_PER_PAGE),
+                });
+                if (selectedLotteryId !== 'all') {
+                    params.set('lotteryTypeId', selectedLotteryId);
+                }
+                const res = await fetch(`/api/orders?${params}`);
                 const result = await res.json();
-                if (result.success && result.data?.length > 0) {
-                    setOrders(result.data as Order[]);
+                if (result.success) {
+                    setOrders((result.data || []) as Order[]);
+                    setTotalItems(result.pagination?.total || 0);
                 }
             } catch (err) {
                 console.warn('Failed to fetch orders from API:', err);
@@ -56,8 +84,13 @@ export default function OrderHistoryPage() {
         }
 
         fetchOrders();
-    }, [isReady, profile]);
+    }, [isReady, profile, currentPage, selectedLotteryId]);
 
+    // Reset page when filter changes
+    const handleLotteryFilter = (id: string) => {
+        setSelectedLotteryId(id);
+        setCurrentPage(1);
+    };
 
     return (
         <div>
@@ -69,10 +102,61 @@ export default function OrderHistoryPage() {
                 <div>
                     <h1 style={{ fontSize: 22, fontWeight: 700 }}>📋 ประวัติออร์เดอร์</h1>
                     <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-                        ดูรายการสั่งซื้อทั้งหมดของคุณ
+                        ดูรายการฝากซื้อทั้งหมดของคุณ
                     </p>
                 </div>
             </div>
+
+            {/* Lottery Type Tabs */}
+            {!loading && lotteryTypes.length > 0 && (
+                <div style={{
+                    display: 'flex', gap: 8, marginBottom: 14, overflowX: 'auto',
+                    padding: '2px 0',
+                }}>
+                    <button
+                        onClick={() => handleLotteryFilter('all')}
+                        style={{
+                            padding: '8px 16px', borderRadius: 12, fontSize: 13, fontWeight: 600,
+                            border: selectedLotteryId === 'all' ? '2px solid var(--primary)' : '1px solid var(--border)',
+                            background: selectedLotteryId === 'all' ? 'linear-gradient(135deg, var(--primary), var(--primary-light))' : 'var(--bg-card)',
+                            color: selectedLotteryId === 'all' ? '#fff' : 'var(--text)',
+                            cursor: 'pointer', whiteSpace: 'nowrap',
+                            boxShadow: selectedLotteryId === 'all' ? '0 2px 8px rgba(59,89,152,0.25)' : 'none',
+                        }}
+                    >
+                        🎰 ทั้งหมด
+                    </button>
+                    {lotteryTypes.map(lt => {
+                        const isActive = selectedLotteryId === lt.id;
+                        const isPowerball = lt.name === 'Powerball';
+                        const emoji = isPowerball ? '🔴' : '🟡';
+                        const activeGrad = isPowerball
+                            ? 'linear-gradient(135deg, #e74c3c, #c0392b)'
+                            : 'linear-gradient(135deg, #f59e0b, #d97706)';
+                        const activeShadow = isPowerball
+                            ? '0 2px 8px rgba(231,76,60,0.3)'
+                            : '0 2px 8px rgba(245,158,11,0.3)';
+
+
+                        return (
+                            <button
+                                key={lt.id}
+                                onClick={() => handleLotteryFilter(lt.id)}
+                                style={{
+                                    padding: '8px 16px', borderRadius: 12, fontSize: 13, fontWeight: 600,
+                                    border: isActive ? 'none' : '1px solid var(--border)',
+                                    background: isActive ? activeGrad : 'var(--bg-card)',
+                                    color: isActive ? '#fff' : 'var(--text)',
+                                    cursor: 'pointer', whiteSpace: 'nowrap',
+                                    boxShadow: isActive ? activeShadow : 'none',
+                                }}
+                            >
+                                {emoji} {lt.name}
+                            </button>
+                        );
+                    })}
+                </div>
+            )}
 
             {!isLoggedIn ? (
                 <div className="card" style={{ textAlign: 'center', padding: 40, marginTop: 20 }}>
@@ -89,16 +173,24 @@ export default function OrderHistoryPage() {
                     <Ticket size={40} color="var(--text-muted)" style={{ marginBottom: 12 }} />
                     <p style={{ color: 'var(--text-muted)' }}>ยังไม่มีออร์เดอร์</p>
                     <Link href="/" className="btn btn-primary" style={{ marginTop: 16 }}>
-                        ซื้อหวยเลย!
+                        ฝากซื้อ Lottery เลย!
                     </Link>
                 </div>
             ) : (
+                <>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 8 }}>
-                    {orders.map((order: Order, index: number): React.JSX.Element => (
+                    {orders.map((order: Order, index: number): React.JSX.Element => {
+                        const lotteryType = order.lottery_type as unknown as { name: string } | null;
+                        const isPowerball = lotteryType?.name === 'Powerball';
+
+                        return (
                         <div
                             key={order.id}
                             className="card fade-in"
-                            style={{ animationDelay: `${index * 0.08}s` }}
+                            style={{
+                                animationDelay: `${index * 0.08}s`,
+                                borderLeft: `4px solid ${isPowerball ? '#e74c3c' : '#f59e0b'}`,
+                            }}
                         >
                             {/* Order header */}
                             <div style={{
@@ -111,8 +203,19 @@ export default function OrderHistoryPage() {
                                     <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>
                                         {order.order_number}
                                     </div>
-                                    <div style={{ fontSize: 16, fontWeight: 700 }}>
-                                        {(order.lottery_type as unknown as { name: string })?.name || 'หวย'}
+                                    <div style={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
+                                        <span style={{
+                                            width: 20, height: 20, borderRadius: '50%',
+                                            background: isPowerball
+                                                ? 'linear-gradient(135deg, #e74c3c, #c0392b)'
+                                                : 'linear-gradient(135deg, #f59e0b, #d97706)',
+                                            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                                            fontSize: 10, color: isPowerball ? '#fff' : '#1a1a1a',
+                                            fontWeight: 700, flexShrink: 0,
+                                        }}>
+                                            {isPowerball ? 'P' : 'M'}
+                                        </span>
+                                        {lotteryType?.name || 'Lottery'}
                                     </div>
                                 </div>
                                 <span className={`badge ${statusBadgeClass[order.status]}`}>
@@ -120,6 +223,13 @@ export default function OrderHistoryPage() {
                                     {ORDER_STATUS_LABELS[order.status]}
                                 </span>
                             </div>
+
+                            {/* Draw date info */}
+                            {order.draw_date && (
+                                <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 4 }}>
+                                    📅 งวดวันที่: {new Date(order.draw_date).toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' })}
+                                </div>
+                            )}
 
                             {/* Numbers */}
                             {order.order_lines && order.order_lines.length > 0 ? (
@@ -139,7 +249,15 @@ export default function OrderHistoryPage() {
                                                     <span key={i} className="number-ball mini selected">{n}</span>
                                                 ))}
                                                 {line.special_number !== null && (
-                                                    <span className="number-ball mini special selected">
+                                                    <span
+                                                        className="number-ball mini special selected"
+                                                        style={{
+                                                            background: isPowerball
+                                                                ? 'linear-gradient(135deg, #e74c3c, #c0392b)'
+                                                                : 'linear-gradient(135deg, #f59e0b, #d97706)',
+                                                            color: isPowerball ? '#fff' : '#1a1a1a',
+                                                        }}
+                                                    >
                                                         {line.special_number as number}
                                                     </span>
                                                 )}
@@ -208,9 +326,14 @@ export default function OrderHistoryPage() {
                                                     🎫 รูป Lottery ของคุณ{hasMulti ? ` (${imgs!.length} รูป)` : ''}
                                                 </span>
                                             </div>
+                                            {order.draw_date && (
+                                                <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 6 }}>
+                                                    📅 งวดวันที่: {new Date(order.draw_date).toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' })}
+                                                </div>
+                                            )}
                                             {order.purchased_at && (
                                                 <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 10 }}>
-                                                    📅 ซื้อเมื่อ: {formatDateTime(order.purchased_at)}
+                                                    🛒 ซื้อเมื่อ: {formatDateTime(order.purchased_at)}
                                                 </div>
                                             )}
                                             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -253,7 +376,7 @@ export default function OrderHistoryPage() {
                                     fontSize: 13,
                                     color: 'var(--primary)',
                                 }}>
-                                    ✅ ยืนยันการจ่ายแล้ว — กำลังดำเนินการซื้อสินค้า
+                                    ✅ ยืนยันการจ่ายแล้ว — กำลังดำเนินการซื้อ
                                 </div>
                             )}
 
@@ -290,8 +413,18 @@ export default function OrderHistoryPage() {
                                 </div>
                             )}
                         </div>
-                    ))}
+                        );
+                    })}
                 </div>
+
+                {/* Pagination */}
+                <Pagination
+                    currentPage={currentPage}
+                    totalItems={totalItems}
+                    itemsPerPage={ITEMS_PER_PAGE}
+                    onPageChange={(page) => { setCurrentPage(page); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                />
+                </>
             )}
         </div>
     );

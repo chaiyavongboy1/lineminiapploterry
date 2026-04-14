@@ -87,7 +87,7 @@ function CheckoutContent() {
                         promptpayId: '0812345678',
                         bankName: 'กสิกรไทย (KBANK)',
                         accountNumber: '123-4-56789-0',
-                        accountHolderName: 'American Lottery TH',
+                        accountHolderName: 'America Lottery TH',
                     });
                 }
             } catch {
@@ -95,7 +95,7 @@ function CheckoutContent() {
                     promptpayId: '0812345678',
                     bankName: 'กสิกรไทย (KBANK)',
                     accountNumber: '123-4-56789-0',
-                    accountHolderName: 'American Lottery TH',
+                    accountHolderName: 'America Lottery TH',
                 });
             }
         }
@@ -275,6 +275,9 @@ function CheckoutContent() {
                     <div style={{ fontSize: 28, fontWeight: 800, color: 'var(--accent)' }}>
                         {formatCurrency(totalAmount)}
                     </div>
+                    <div style={{ fontSize: 13, color: 'var(--primary)', fontWeight: 600, marginTop: 6, lineHeight: 1.5 }}>
+                        คุณกำลังฝากซื้อ {data.lotteryName} ประจำงวดวันที่ {new Date(data.drawDate).toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' })}
+                    </div>
                     <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
                         {totalLines} Lines × ฿{data.pricePerLine} + ค่าบริการ ฿{serviceFee}
                     </div>
@@ -388,9 +391,9 @@ function CheckoutContent() {
                                 }}>
                                     🎟️
                                 </div>
-                                <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 8 }}>ยืนยันการซื้อ</h3>
+                                <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 8 }}>ยืนยันการฝากซื้อ</h3>
                                 <p style={{ fontSize: 14, color: 'var(--text-muted)', lineHeight: 1.6 }}>
-                                    คุณกำลังซื้อ
+                                    คุณกำลังฝากซื้อ
                                 </p>
                                 <p style={{ fontSize: 16, fontWeight: 700, color: 'var(--primary)', marginTop: 4 }}>
                                     {data.lotteryName}
@@ -556,7 +559,7 @@ function CheckoutContent() {
             </div>
 
             <h1 style={{ fontSize: 24, fontWeight: 800, marginBottom: 6 }}>
-                สั่งซื้อสำเร็จ! 🎉
+                ฝากซื้อสำเร็จ! 🎉
             </h1>
             <p style={{ color: 'var(--text-muted)', fontSize: 14, marginBottom: 24 }}>
                 รอแอดมินตรวจสอบสลิปการโอน
@@ -615,7 +618,7 @@ function CheckoutContent() {
                     📋 ดูประวัติออร์เดอร์
                 </Link>
                 <Link href="/" className="btn btn-outline btn-full" style={{ fontSize: 15, padding: '14px 24px' }}>
-                    🎫 ซื้อหวยเพิ่ม
+                    🎫 ฝากซื้อ Lottery เพิ่ม
                 </Link>
             </div>
         </div>

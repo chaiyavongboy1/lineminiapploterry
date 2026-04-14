@@ -63,7 +63,7 @@ export default function InfoPage() {
                             </h1>
                         </div>
                         <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.75)', marginTop: 4 }}>
-                            ทุกสิ่งที่คุณต้องรู้เกี่ยวกับ American Lottery
+                            ทุกสิ่งที่คุณต้องรู้เกี่ยวกับ America Lottery
                         </p>
                     </div>
                 </div>

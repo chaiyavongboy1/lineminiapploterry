@@ -45,7 +45,7 @@ async function handleTextMessage(event: any) {
     const replyToken = event.replyToken;
 
     // Keywords that trigger Mini App link
-    const buyKeywords = ['ซื้อหวย', 'ซื้อ', 'lottery', 'powerball', 'mega', 'หวย', 'buy'];
+    const buyKeywords = ['ฝากซื้อ', 'ซื้อ', 'lottery', 'powerball', 'mega', 'ฝากซื้อ lottery', 'buy'];
 
     if (buyKeywords.some(kw => text.includes(kw))) {
         await replyWithLotteryMenu(replyToken);
@@ -68,7 +68,7 @@ async function replyWithLotteryMenu(replyToken: string) {
 
     const flexMessage = {
         type: 'flex',
-        altText: '🎰 เลือกหวยอเมริกาที่ต้องการ',
+        altText: '🎰 เลือก Lottery ที่ต้องการ',
         contents: {
             type: 'bubble',
             hero: {
@@ -84,14 +84,14 @@ async function replyWithLotteryMenu(replyToken: string) {
                 contents: [
                     {
                         type: 'text',
-                        text: '🎰 American Lottery',
+                        text: '🎰 America Lottery',
                         weight: 'bold',
                         size: 'xl',
                         color: '#1a237e',
                     },
                     {
                         type: 'text',
-                        text: 'เลือกซื้อหวยอเมริกาได้ง่ายๆ ผ่าน LINE!',
+                        text: 'ฝากซื้อ Lottery อเมริกาได้ง่ายๆ ผ่าน LINE!',
                         size: 'sm',
                         color: '#666666',
                         margin: 'md',
@@ -108,7 +108,7 @@ async function replyWithLotteryMenu(replyToken: string) {
                         type: 'button',
                         action: {
                             type: 'uri',
-                            label: '🎯 ซื้อหวยเลย!',
+                            label: '🎯 ฝากซื้อ Lottery เลย!',
                             uri: miniAppUrl || appUrl,
                         },
                         style: 'primary',
@@ -139,7 +139,7 @@ async function replyWithOrderHistory(replyToken: string, _userId: string) {
                     layout: 'vertical',
                     contents: [
                         { type: 'text', text: '📋 ประวัติออร์เดอร์', weight: 'bold', size: 'lg' },
-                        { type: 'text', text: 'กดปุ่มด้านล่างเพื่อดูประวัติการซื้อ', size: 'sm', color: '#666', margin: 'md', wrap: true },
+                        { type: 'text', text: 'กดปุ่มด้านล่างเพื่อดูประวัติการฝากซื้อ', size: 'sm', color: '#666', margin: 'md', wrap: true },
                     ],
                     paddingAll: '16px',
                 },
@@ -166,8 +166,8 @@ async function replyWithWelcome(replyToken: string) {
         {
             type: 'text',
             text:
-                '🎰 ยินดีต้อนรับสู่ American Lottery!\n\n' +
-                '📌 พิมพ์ "ซื้อหวย" เพื่อดูรายการหวย\n' +
+                '🎰 ยินดีต้อนรับสู่ America Lottery!\n\n' +
+                '📌 พิมพ์ "ฝากซื้อ" เพื่อดูรายการ Lottery\n' +
                 '📋 พิมพ์ "ประวัติ" เพื่อดูออร์เดอร์\n\n' +
                 'หรือกดเมนูด้านล่างได้เลยครับ 👇',
         },

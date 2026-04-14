@@ -103,7 +103,7 @@ export default function AdminLotteryTypesPage() {
     return (
         <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                <h2 style={{ fontSize: 20, fontWeight: 700 }}>🎰 จัดการประเภทหวย</h2>
+                <h2 style={{ fontSize: 20, fontWeight: 700 }}>🎰 จัดการประเภท Lottery</h2>
             </div>
 
             {error && (
@@ -131,7 +131,7 @@ export default function AdminLotteryTypesPage() {
             {/* Lottery Type Cards */}
             {lotteryTypes.length === 0 ? (
                 <div className="card" style={{ textAlign: 'center', padding: 40 }}>
-                    <p style={{ color: 'var(--text-muted)' }}>ไม่พบประเภทหวย</p>
+                    <p style={{ color: 'var(--text-muted)' }}>ไม่พบประเภท Lottery</p>
                 </div>
             ) : (
                 lotteryTypes.map(lt => (

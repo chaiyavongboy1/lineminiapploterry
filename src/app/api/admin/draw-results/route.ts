@@ -9,9 +9,22 @@ export async function GET(req: NextRequest) {
     try {
         const { searchParams } = new URL(req.url);
         const lotteryTypeId = searchParams.get('lottery_type_id');
+        const page = parseInt(searchParams.get('page') || '1', 10);
+        const limit = parseInt(searchParams.get('limit') || '20', 10);
+        const offset = (page - 1) * limit;
 
         const supabase = createServerClient();
 
+        // Build count query
+        let countQuery = supabase
+            .from('draw_results')
+            .select('id', { count: 'exact', head: true });
+        if (lotteryTypeId) {
+            countQuery = countQuery.eq('lottery_type_id', lotteryTypeId);
+        }
+        const { count: totalCount } = await countQuery;
+
+        // Build data query with server-side pagination
         let query = supabase
             .from('draw_results')
             .select(`
@@ -19,7 +32,7 @@ export async function GET(req: NextRequest) {
                 lottery_type:lottery_types(id, name)
             `)
             .order('draw_date', { ascending: false })
-            .limit(50);
+            .range(offset, offset + limit - 1);
 
         if (lotteryTypeId) {
             query = query.eq('lottery_type_id', lotteryTypeId);
@@ -31,23 +44,37 @@ export async function GET(req: NextRequest) {
             return NextResponse.json({ success: false, error: error.message }, { status: 500 });
         }
 
-        // For each draw result, count winners
-        const resultsWithStats = await Promise.all(
-            (data || []).map(async (draw) => {
-                const { data: lineResults } = await supabase
-                    .from('order_line_results')
-                    .select('is_winner, prize_amount')
-                    .eq('draw_result_id', draw.id);
+        // Batch fetch winner stats for all draw results in ONE query (fixing N+1)
+        const drawIds = (data || []).map(d => d.id);
+        let statsMap: Record<string, { totalChecked: number; totalWinners: number; totalPrizeAmount: number }> = {};
 
-                const totalChecked = lineResults?.length || 0;
-                const totalWinners = lineResults?.filter(r => r.is_winner).length || 0;
-                const totalPrizeAmount = lineResults?.reduce((sum, r) => sum + (r.prize_amount || 0), 0) || 0;
+        if (drawIds.length > 0) {
+            const { data: allLineResults } = await supabase
+                .from('order_line_results')
+                .select('draw_result_id, is_winner, prize_amount')
+                .in('draw_result_id', drawIds);
 
-                return { ...draw, totalChecked, totalWinners, totalPrizeAmount };
-            })
-        );
+            // Aggregate in JS
+            for (const r of allLineResults || []) {
+                if (!statsMap[r.draw_result_id]) {
+                    statsMap[r.draw_result_id] = { totalChecked: 0, totalWinners: 0, totalPrizeAmount: 0 };
+                }
+                statsMap[r.draw_result_id].totalChecked++;
+                if (r.is_winner) statsMap[r.draw_result_id].totalWinners++;
+                statsMap[r.draw_result_id].totalPrizeAmount += r.prize_amount || 0;
+            }
+        }
 
-        return NextResponse.json({ success: true, data: resultsWithStats });
+        const resultsWithStats = (data || []).map(draw => ({
+            ...draw,
+            ...(statsMap[draw.id] || { totalChecked: 0, totalWinners: 0, totalPrizeAmount: 0 }),
+        }));
+
+        return NextResponse.json({
+            success: true,
+            data: resultsWithStats,
+            pagination: { page, limit, total: totalCount || 0 },
+        });
     } catch (err) {
         console.error('Error fetching draw results:', err);
         return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 });
