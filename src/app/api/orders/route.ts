@@ -192,7 +192,7 @@ export async function GET(request: NextRequest) {
                 *,
                 lottery_type:lottery_types(id, name),
                 order_lines(*),
-                payment_slips(id, image_url),
+                payment_slips(id, slip_image_url),
                 ticket_images(id, image_url)
             `)
             .eq('user_id', user.id)

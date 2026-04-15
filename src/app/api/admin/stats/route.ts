@@ -77,7 +77,7 @@ export async function GET(request: NextRequest) {
                     user:users!orders_user_id_fkey(id, display_name, picture_url, line_user_id),
                     lottery_type:lottery_types(id, name),
                     order_lines(*),
-                    payment_slips(id, image_url)
+                    payment_slips(id, slip_image_url)
                 `)
                 .order('created_at', { ascending: false })
                 .range(0, 4),
