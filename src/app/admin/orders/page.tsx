@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useLine } from '@/components/LineProvider';
 import { createClient } from '@/lib/supabase/client';
 import { useSearchParams } from 'next/navigation';
@@ -36,6 +36,7 @@ export default function AdminOrdersPage() {
     const searchParams = useSearchParams();
     const [orders, setOrders] = useState<Order[]>([]);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
     const [filter, setFilter] = useState(() => searchParams.get('status') || 'all');
     const [lotteryTypes, setLotteryTypes] = useState<LotteryType[]>([]);
     const [selectedLotteryId, setSelectedLotteryId] = useState<string>(() => searchParams.get('lotteryTypeId') || 'all');
@@ -51,7 +52,6 @@ export default function AdminOrdersPage() {
         async function loadInitialData() {
             try {
                 const supabase = createClient();
-                // Parallel: lottery types + pending counts
                 const [typesResult, statsRes] = await Promise.all([
                     supabase.from('lottery_types').select('*').eq('is_active', true).order('name'),
                     fetch(`/api/admin/stats?adminLineUserId=${profile!.userId}`),
@@ -70,40 +70,48 @@ export default function AdminOrdersPage() {
         loadInitialData();
     }, [profile]);
 
-    // Fetch orders with server-side pagination (re-runs on filter/page changes)
-    useEffect(() => {
+    // Fetch orders with server-side pagination
+    const fetchOrders = useCallback(async () => {
         if (!profile?.userId) return;
 
-        async function fetchOrders() {
-            setLoading(true);
-            try {
-                const params = new URLSearchParams({
-                    adminLineUserId: profile!.userId,
-                    status: filter,
-                    page: String(currentPage),
-                    limit: String(ITEMS_PER_PAGE),
-                });
-                if (selectedLotteryId !== 'all') {
-                    params.set('lotteryTypeId', selectedLotteryId);
-                }
-                const res = await fetch(`/api/admin/orders?${params}`);
-                const result = await res.json();
-                if (result.success && result.data) {
-                    setOrders(result.data);
-                    setTotalItems(result.pagination?.total || 0);
-                }
-            } catch (err) {
-                console.warn('Failed to fetch from API:', err);
-            } finally {
-                setLoading(false);
+        setLoading(true);
+        setError(null);
+        try {
+            const params = new URLSearchParams({
+                adminLineUserId: profile.userId,
+                status: filter,
+                page: String(currentPage),
+                limit: String(ITEMS_PER_PAGE),
+            });
+            if (selectedLotteryId !== 'all') {
+                params.set('lotteryTypeId', selectedLotteryId);
             }
-        }
 
-        fetchOrders();
+            const res = await fetch(`/api/admin/orders?${params}`);
+            const result = await res.json();
+
+            if (!res.ok || !result.success) {
+                console.error('Admin orders API error:', result);
+                setError(result.error || `HTTP ${res.status}`);
+                setOrders([]);
+                setTotalItems(0);
+                return;
+            }
+
+            setOrders(result.data || []);
+            setTotalItems(result.pagination?.total || 0);
+        } catch (err) {
+            console.error('Failed to fetch orders:', err);
+            setError('เกิดข้อผิดพลาดในการโหลดข้อมูล');
+            setOrders([]);
+        } finally {
+            setLoading(false);
+        }
     }, [profile, filter, currentPage, selectedLotteryId]);
 
-    const pendingReviewCount = () =>
-        0; // Count is now handled server-side
+    useEffect(() => {
+        fetchOrders();
+    }, [fetchOrders]);
 
     const filters = [
         { value: 'all', label: 'ทั้งหมด' },
@@ -112,6 +120,8 @@ export default function AdminOrdersPage() {
         { value: 'completed', label: 'สำเร็จ' },
         { value: 'rejected', label: 'ปฏิเสธ' },
     ];
+
+    const totalPending = Object.values(pendingByType).reduce((sum, n) => sum + n, 0);
 
     return (
         <div>
@@ -146,9 +156,7 @@ export default function AdminOrdersPage() {
                         const activeShadow = isPowerball
                             ? '0 2px 8px rgba(231,76,60,0.3)'
                             : '0 2px 8px rgba(245,158,11,0.3)';
-                        // Per-type pending badge count
                         const typePendingCount = pendingByType[lt.id] || 0;
-
 
                         return (
                             <button
@@ -168,8 +176,7 @@ export default function AdminOrdersPage() {
                                 {typePendingCount > 0 && (
                                     <span style={{
                                         position: 'absolute',
-                                        top: -6,
-                                        right: -6,
+                                        top: -6, right: -6,
                                         background: 'var(--danger)',
                                         color: '#fff',
                                         borderRadius: 10,
@@ -198,20 +205,43 @@ export default function AdminOrdersPage() {
                         onClick={() => { setFilter(f.value); setCurrentPage(1); }}
                     >
                         {f.label}
-                        {f.value === 'pending_review' && (() => {
-                            const totalPending = Object.values(pendingByType).reduce((sum, n) => sum + n, 0);
-                            return totalPending > 0 ? (
-                                <span style={{
-                                    background: 'var(--danger)', color: '#fff',
-                                    borderRadius: 10, padding: '1px 6px', fontSize: 10, marginLeft: 4,
-                                }}>
-                                    {totalPending}
-                                </span>
-                            ) : null;
-                        })()}
+                        {f.value === 'pending_review' && totalPending > 0 && (
+                            <span style={{
+                                background: 'var(--danger)', color: '#fff',
+                                borderRadius: 10, padding: '1px 6px', fontSize: 10, marginLeft: 4,
+                            }}>
+                                {totalPending}
+                            </span>
+                        )}
                     </button>
                 ))}
             </div>
+
+            {/* Error State */}
+            {error && !loading && (
+                <div style={{
+                    background: 'linear-gradient(135deg, #fff1f2, #ffe4e6)',
+                    border: '1.5px solid rgba(244,63,94,0.2)',
+                    borderRadius: 14, padding: '16px 20px',
+                    marginBottom: 16, display: 'flex', alignItems: 'center', gap: 12,
+                }}>
+                    <AlertCircle size={20} color="var(--danger)" />
+                    <div>
+                        <div style={{ fontWeight: 700, color: 'var(--danger)', fontSize: 14 }}>ไม่สามารถโหลดข้อมูลได้</div>
+                        <div style={{ fontSize: 12, color: '#9f1239', marginTop: 2 }}>{error}</div>
+                    </div>
+                    <button
+                        onClick={fetchOrders}
+                        style={{
+                            marginLeft: 'auto', padding: '6px 14px', borderRadius: 10,
+                            background: 'var(--danger)', color: '#fff',
+                            border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 700,
+                        }}
+                    >
+                        ลองใหม่
+                    </button>
+                </div>
+            )}
 
             {loading ? (
                 <div>
@@ -221,114 +251,126 @@ export default function AdminOrdersPage() {
                 </div>
             ) : orders.length === 0 ? (
                 <div className="card" style={{ textAlign: 'center', padding: 40 }}>
-                    <p style={{ color: 'var(--text-muted)' }}>ไม่มีออร์เดอร์</p>
+                    <div style={{
+                        width: 56, height: 56, borderRadius: 18,
+                        background: 'linear-gradient(135deg, #eff6ff, #dbeafe)',
+                        border: '2px solid rgba(59,130,246,0.15)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        margin: '0 auto 12px',
+                    }}>
+                        <FileText size={26} color="var(--blue-400)" strokeWidth={1.5} />
+                    </div>
+                    <p style={{ color: 'var(--text-muted)', fontWeight: 600 }}>ไม่มีออร์เดอร์</p>
+                    <p style={{ color: 'var(--text-muted)', fontSize: 12, marginTop: 4 }}>
+                        {filter !== 'all' ? `ไม่มีออร์เดอร์ในสถานะ "${filters.find(f => f.value === filter)?.label}"` : 'ยังไม่มีออร์เดอร์ในระบบ'}
+                    </p>
                 </div>
             ) : (
                 <>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                    {orders.map((order, index) => {
-                        const lotteryType = order.lottery_type as unknown as { name: string } | null;
-                        const isPowerball = lotteryType?.name === 'Powerball';
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                        {orders.map((order, index) => {
+                            const lotteryType = order.lottery_type as unknown as { name: string } | null;
+                            const isPowerball = lotteryType?.name === 'Powerball';
 
-                        return (
-                            <Link
-                                key={order.id}
-                                href={`/admin/orders/${order.id}`}
-                                style={{ textDecoration: 'none', color: 'inherit' }}
-                            >
-                                <div className="card fade-in" style={{
-                                    animationDelay: `${index * 0.05}s`,
-                                    borderLeft: order.status === 'pending_review'
-                                        ? '4px solid var(--warning)'
-                                        : `4px solid ${isPowerball ? '#e74c3c' : '#f59e0b'}`,
-                                }}>
-                                    <div style={{
-                                        display: 'flex',
-                                        justifyContent: 'space-between',
-                                        alignItems: 'flex-start',
-                                        marginBottom: 10,
+                            return (
+                                <Link
+                                    key={order.id}
+                                    href={`/admin/orders/${order.id}`}
+                                    style={{ textDecoration: 'none', color: 'inherit' }}
+                                >
+                                    <div className="card fade-in" style={{
+                                        animationDelay: `${index * 0.05}s`,
+                                        borderLeft: order.status === 'pending_review'
+                                            ? '4px solid var(--warning)'
+                                            : `4px solid ${isPowerball ? '#e74c3c' : '#f59e0b'}`,
                                     }}>
-                                        <div>
-                                            <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-                                                {order.order_number}
-                                            </div>
-                                            <div style={{ fontWeight: 600, marginTop: 2, display: 'flex', alignItems: 'center', gap: 6 }}>
-                                                <span style={{
-                                                    width: 20, height: 20, borderRadius: '50%',
-                                                    background: isPowerball
-                                                        ? 'linear-gradient(135deg, #e74c3c, #c0392b)'
-                                                        : 'linear-gradient(135deg, #f59e0b, #d97706)',
-                                                    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                                                    fontSize: 10, color: isPowerball ? '#fff' : '#1a1a1a',
-                                                    fontWeight: 700, flexShrink: 0,
-                                                }}>
-                                                    {isPowerball ? 'P' : 'M'}
-                                                </span>
-                                                {lotteryType?.name || 'N/A'}
-                                            </div>
-                                        </div>
-                                        <span className={`badge ${statusBadgeClass[order.status]}`}>
-                                            {statusIcons[order.status]}
-                                            {ORDER_STATUS_LABELS[order.status]}
-                                        </span>
-                                    </div>
-
-                                    {/* Show numbers preview */}
-                                    {order.order_lines && order.order_lines.length > 0 && (
-                                        <div style={{ marginBottom: 8 }}>
-                                            {order.order_lines.slice(0, 2).map(line => (
-                                                <div key={line.id || line.line_number} style={{ display: 'flex', gap: 3, marginBottom: 4 }}>
-                                                    {line.numbers.map((n, i) => (
-                                                        <span key={i} className="number-ball mini selected" style={{ width: 22, height: 22, fontSize: 10 }}>{n}</span>
-                                                    ))}
-                                                    {line.special_number !== null && (
-                                                        <span
-                                                            className="number-ball mini special selected"
-                                                            style={{
-                                                                width: 22, height: 22, fontSize: 10,
-                                                                background: isPowerball
-                                                                    ? 'linear-gradient(135deg, #e74c3c, #c0392b)'
-                                                                    : 'linear-gradient(135deg, #f59e0b, #d97706)',
-                                                                color: isPowerball ? '#fff' : '#1a1a1a',
-                                                            }}
-                                                        >
-                                                            {line.special_number}
-                                                        </span>
-                                                    )}
+                                        <div style={{
+                                            display: 'flex',
+                                            justifyContent: 'space-between',
+                                            alignItems: 'flex-start',
+                                            marginBottom: 10,
+                                        }}>
+                                            <div>
+                                                <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+                                                    {order.order_number}
                                                 </div>
-                                            ))}
-                                            {order.order_lines.length > 2 && (
-                                                <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-                                                    +{order.order_lines.length - 2} lines
-                                                </span>
-                                            )}
+                                                <div style={{ fontWeight: 600, marginTop: 2, display: 'flex', alignItems: 'center', gap: 6 }}>
+                                                    <span style={{
+                                                        width: 20, height: 20, borderRadius: '50%',
+                                                        background: isPowerball
+                                                            ? 'linear-gradient(135deg, #e74c3c, #c0392b)'
+                                                            : 'linear-gradient(135deg, #f59e0b, #d97706)',
+                                                        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                                                        fontSize: 10, color: isPowerball ? '#fff' : '#1a1a1a',
+                                                        fontWeight: 700, flexShrink: 0,
+                                                    }}>
+                                                        {isPowerball ? 'P' : 'M'}
+                                                    </span>
+                                                    {lotteryType?.name || 'N/A'}
+                                                </div>
+                                            </div>
+                                            <span className={`badge ${statusBadgeClass[order.status]}`}>
+                                                {statusIcons[order.status]}
+                                                {ORDER_STATUS_LABELS[order.status]}
+                                            </span>
                                         </div>
-                                    )}
 
-                                    <div style={{
-                                        display: 'flex',
-                                        justifyContent: 'space-between',
-                                        alignItems: 'center',
-                                        paddingTop: 10,
-                                        borderTop: '1px solid var(--border)',
-                                    }}>
-                                        <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-                                            {formatDateTime(order.created_at)}
-                                        </span>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                                            <span style={{ fontWeight: 700, color: 'var(--accent)' }}>
-                                                {formatCurrency(order.total_amount)}
+                                        {/* Show numbers preview */}
+                                        {order.order_lines && order.order_lines.length > 0 && (
+                                            <div style={{ marginBottom: 8 }}>
+                                                {order.order_lines.slice(0, 2).map(line => (
+                                                    <div key={line.id || line.line_number} style={{ display: 'flex', gap: 3, marginBottom: 4 }}>
+                                                        {line.numbers.map((n, i) => (
+                                                            <span key={i} className="number-ball mini selected" style={{ width: 22, height: 22, fontSize: 10 }}>{n}</span>
+                                                        ))}
+                                                        {line.special_number !== null && (
+                                                            <span
+                                                                className="number-ball mini special selected"
+                                                                style={{
+                                                                    width: 22, height: 22, fontSize: 10,
+                                                                    background: isPowerball
+                                                                        ? 'linear-gradient(135deg, #e74c3c, #c0392b)'
+                                                                        : 'linear-gradient(135deg, #f59e0b, #d97706)',
+                                                                    color: isPowerball ? '#fff' : '#1a1a1a',
+                                                                }}
+                                                            >
+                                                                {line.special_number}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                ))}
+                                                {order.order_lines.length > 2 && (
+                                                    <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+                                                        +{order.order_lines.length - 2} lines
+                                                    </span>
+                                                )}
+                                            </div>
+                                        )}
+
+                                        <div style={{
+                                            display: 'flex',
+                                            justifyContent: 'space-between',
+                                            alignItems: 'center',
+                                            paddingTop: 10,
+                                            borderTop: '1px solid var(--border)',
+                                        }}>
+                                            <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+                                                {formatDateTime(order.created_at)}
                                             </span>
-                                            <span style={{ fontSize: 13, color: 'var(--primary-light)', display: 'flex', alignItems: 'center', gap: 4 }}>
-                                                <Eye size={14} /> ดู
-                                            </span>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                                <span style={{ fontWeight: 700, color: 'var(--accent)' }}>
+                                                    {formatCurrency(order.total_amount)}
+                                                </span>
+                                                <span style={{ fontSize: 13, color: 'var(--primary-light)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                                                    <Eye size={14} /> ดู
+                                                </span>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                            </Link>
-                        );
-                    })}
-                </div>
+                                </Link>
+                            );
+                        })}
+                    </div>
 
                     {/* Pagination */}
                     <Pagination

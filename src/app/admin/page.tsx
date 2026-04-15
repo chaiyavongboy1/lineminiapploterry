@@ -22,9 +22,9 @@ interface Stats {
 
 function getThaiDate(): string {
     const now = new Date();
-    const thaiMonths = ['à¸¡à¸à¸£à¸²à¸„à¸¡','à¸à¸¸à¸¡à¸ à¸²à¸žà¸±à¸™à¸˜à¹Œ','à¸¡à¸µà¸™à¸²à¸„à¸¡','à¹€à¸¡à¸©à¸²à¸¢à¸™','à¸žà¸¤à¸©à¸ à¸²à¸„à¸¡','à¸¡à¸´à¸–à¸¸à¸™à¸²à¸¢à¸™','à¸à¸£à¸à¸Žà¸²à¸„à¸¡','à¸ªà¸´à¸‡à¸«à¸²à¸„à¸¡','à¸à¸±à¸™à¸¢à¸²à¸¢à¸™','à¸•à¸¸à¸¥à¸²à¸„à¸¡','à¸žà¸¤à¸¨à¸ˆà¸´à¸à¸²à¸¢à¸™','à¸˜à¸±à¸™à¸§à¸²à¸„à¸¡'];
-    const thaiDays = ['à¸­à¸²à¸—à¸´à¸•à¸¢à¹Œ','à¸ˆà¸±à¸™à¸—à¸£à¹Œ','à¸­à¸±à¸‡à¸„à¸²à¸£','à¸žà¸¸à¸˜','à¸žà¸¤à¸«à¸±à¸ªà¸šà¸”à¸µ','à¸¨à¸¸à¸à¸£à¹Œ','à¹€à¸ªà¸²à¸£à¹Œ'];
-    return `à¸§à¸±à¸™${thaiDays[now.getDay()]}à¸—à¸µà¹ˆ ${now.getDate()} ${thaiMonths[now.getMonth()]} ${now.getFullYear() + 543}`;
+    const thaiMonths = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+    const thaiDays = ['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัสบดี','ศุกร์','เสาร์'];
+    return `วัน${thaiDays[now.getDay()]}ที่ ${now.getDate()} ${thaiMonths[now.getMonth()]} ${now.getFullYear() + 543}`;
 }
 
 export default function AdminDashboard() {
@@ -84,35 +84,35 @@ export default function AdminDashboard() {
     }, [profile]);
 
     const statCards = [
-        { label: 'à¸­à¸­à¸£à¹Œà¹€à¸”à¸­à¸£à¹Œà¸—à¸±à¹‰à¸‡à¸«à¸¡à¸”', value: stats.totalOrders, icon: <FileText size={20} />,
+        { label: 'ออร์เดอร์ทั้งหมด', value: stats.totalOrders, icon: <FileText size={20} />,
           bg: 'linear-gradient(145deg, #eff6ff 0%, #dbeafe 100%)', iconBg: 'var(--grad-primary)',
           border: 'rgba(59,130,246,0.2)', color: '#1d4ed8', shadow: 'rgba(59,130,246,0.12)' },
-        { label: 'à¸£à¸­à¸•à¸£à¸§à¸ˆà¸ªà¸­à¸š', value: stats.pendingReview, icon: <Clock size={20} />,
+        { label: 'รอตรวจสอบ', value: stats.pendingReview, icon: <Clock size={20} />,
           bg: 'linear-gradient(145deg, #fffbeb 0%, #fef3c7 100%)', iconBg: 'var(--grad-accent)',
           border: 'rgba(245,158,11,0.22)', color: '#92400e', shadow: 'rgba(245,158,11,0.12)' },
-        { label: 'à¸‹à¸·à¹‰à¸­à¸ªà¸³à¹€à¸£à¹‡à¸ˆ', value: stats.approved, icon: <CheckCircle size={20} />,
+        { label: 'ซื้อสำเร็จ', value: stats.approved, icon: <CheckCircle size={20} />,
           bg: 'linear-gradient(145deg, #ecfdf5 0%, #d1fae5 100%)', iconBg: 'var(--grad-success)',
           border: 'rgba(16,185,129,0.2)', color: '#065f46', shadow: 'rgba(16,185,129,0.12)' },
-        { label: 'à¸¢à¸­à¸”à¸‚à¸²à¸¢à¸£à¸§à¸¡', value: formatCurrency(stats.totalRevenue), icon: <DollarSign size={20} />,
+        { label: 'ยอดขายรวม', value: formatCurrency(stats.totalRevenue), icon: <DollarSign size={20} />,
           bg: 'linear-gradient(145deg, #f0f9ff 0%, #e0f2fe 100%)', iconBg: 'var(--grad-sky)',
           border: 'rgba(14,165,233,0.2)', color: '#0c4a6e', shadow: 'rgba(14,165,233,0.12)' },
     ];
 
     const quickActions = [
-        { label: 'à¸•à¸£à¸§à¸ˆà¸ªà¸¥à¸´à¸›',   href: '/admin/orders',       icon: <ClipboardList size={20} />, cls: 'icon-box-grad-blue' },
-        { label: 'à¸˜à¸™à¸²à¸„à¸²à¸£',     href: '/admin/settings',     icon: <CreditCard size={20} />,    cls: 'icon-box-grad-sky' },
-        { label: 'à¸ˆà¸±à¸”à¸à¸²à¸£ Lottery',  href: '/admin/lottery-types', icon: <Ticket size={20} />,        cls: 'icon-box-grad-amber' },
-        { label: 'à¹€à¸™à¸·à¹‰à¸­à¸«à¸²',    href: '/admin/content',      icon: <BookOpen size={20} />,      cls: 'icon-box-grad-emerald' },
-        { label: 'à¸œà¸¥à¸£à¸²à¸‡à¸§à¸±à¸¥',   href: '/admin/draw-results', icon: <BarChart2 size={20} />,     cls: 'icon-box-grad-ocean' },
-        { label: 'à¸•à¸±à¹‰à¸‡à¸„à¹ˆà¸²',    href: '/admin/settings',     icon: <Settings size={20} />,      cls: 'icon-box-grad-blue' },
+        { label: 'ตรวจสลิป',   href: '/admin/orders',       icon: <ClipboardList size={20} />, cls: 'icon-box-grad-blue' },
+        { label: 'ธนาคาร',     href: '/admin/settings',     icon: <CreditCard size={20} />,    cls: 'icon-box-grad-sky' },
+        { label: 'จัดการ Lottery',  href: '/admin/lottery-types', icon: <Ticket size={20} />,        cls: 'icon-box-grad-amber' },
+        { label: 'เนื้อหา',    href: '/admin/content',      icon: <BookOpen size={20} />,      cls: 'icon-box-grad-emerald' },
+        { label: 'ผลรางวัล',   href: '/admin/draw-results', icon: <BarChart2 size={20} />,     cls: 'icon-box-grad-ocean' },
+        { label: 'ตั้งค่า',    href: '/admin/settings',     icon: <Settings size={20} />,      cls: 'icon-box-grad-blue' },
     ];
 
     const getStatusInfo = (status: string) => {
         switch (status) {
-            case 'pending_review':  return { label: 'à¸£à¸­à¸•à¸£à¸§à¸ˆà¸ªà¸­à¸š', color: '#92400e', bg: 'linear-gradient(135deg,#fffbeb,#fef3c7)', border: 'rgba(245,158,11,0.25)' };
-            case 'completed':       return { label: 'à¸ªà¸³à¹€à¸£à¹‡à¸ˆ',     color: '#065f46', bg: 'linear-gradient(135deg,#ecfdf5,#d1fae5)', border: 'rgba(16,185,129,0.25)' };
-            case 'rejected':        return { label: 'à¸›à¸à¸´à¹€à¸ªà¸˜',     color: '#9f1239', bg: 'linear-gradient(135deg,#fff1f2,#ffe4e6)', border: 'rgba(244,63,94,0.22)' };
-            case 'pending_payment': return { label: 'à¸£à¸­à¸Šà¸³à¸£à¸°',     color: '#1d4ed8', bg: 'linear-gradient(135deg,#eff6ff,#dbeafe)', border: 'rgba(59,130,246,0.25)' };
+            case 'pending_review':  return { label: 'รอตรวจสอบ', color: '#92400e', bg: 'linear-gradient(135deg,#fffbeb,#fef3c7)', border: 'rgba(245,158,11,0.25)' };
+            case 'completed':       return { label: 'สำเร็จ',     color: '#065f46', bg: 'linear-gradient(135deg,#ecfdf5,#d1fae5)', border: 'rgba(16,185,129,0.25)' };
+            case 'rejected':        return { label: 'ปฏิเสธ',     color: '#9f1239', bg: 'linear-gradient(135deg,#fff1f2,#ffe4e6)', border: 'rgba(244,63,94,0.22)' };
+            case 'pending_payment': return { label: 'รอชำระ',     color: '#1d4ed8', bg: 'linear-gradient(135deg,#eff6ff,#dbeafe)', border: 'rgba(59,130,246,0.25)' };
             default:                return { label: status,       color: '#475569', bg: 'var(--slate-50)',                        border: 'var(--border)' };
         }
     };
@@ -131,7 +131,7 @@ export default function AdminDashboard() {
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20, paddingBottom: 16 }}>
 
-            {/* â•â•â• Welcome â•â•â• */}
+            {/* ═══ Welcome ═══ */}
             <div className="fade-in" style={{
                 background: 'var(--grad-hero)',
                 border: '2px solid rgba(59,130,246,0.18)',
@@ -149,25 +149,25 @@ export default function AdminDashboard() {
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                         boxShadow: 'var(--shadow-blue)', flexShrink: 0, fontSize: 20,
                     }}>
-                        ðŸ‘‹
+                        👋
                     </div>
                     <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: 18, fontWeight: 900, color: '#111827' }}>à¸ªà¸§à¸±à¸ªà¸”à¸µ, Admin</div>
+                        <div style={{ fontSize: 18, fontWeight: 900, color: '#111827' }}>สวัสดี, Admin</div>
                         <div style={{ fontSize: 11, color: 'var(--blue-600)', fontWeight: 600, marginTop: 2 }}>{getThaiDate()}</div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: 'var(--emerald-600)', fontWeight: 700, marginTop: 4 }}>
                             <span className="status-dot" />
-                            à¸£à¸°à¸šà¸šà¸—à¸³à¸‡à¸²à¸™à¸›à¸à¸•à¸´
+                            ระบบทำงานปกติ
                         </div>
                     </div>
                     <TrendingUp size={22} color="rgba(59,130,246,0.35)" />
                 </div>
             </div>
 
-            {/* â•â•â• Stats â•â•â• */}
+            {/* ═══ Stats ═══ */}
             <div>
                 <div className="admin-section-title">
                     <BarChart2 size={14} color="var(--blue-500)" />
-                    à¸ à¸²à¸žà¸£à¸§à¸¡à¸£à¸°à¸šà¸š
+                    ภาพรวมระบบ
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                     {statCards.map((c, i) => (
@@ -272,19 +272,19 @@ export default function AdminDashboard() {
                 </div>
             </div>
 
-            {/* â•â•â• Recent Activity â•â•â• */}
+            {/* ═══ Recent Activity ═══ */}
             <div>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
                     <div className="admin-section-title" style={{ marginBottom: 0 }}>
                         <FileText size={14} color="var(--blue-500)" />
-                        à¸à¸´à¸ˆà¸à¸£à¸£à¸¡à¸¥à¹ˆà¸²à¸ªà¸¸à¸”
+                        กิจกรรมล่าสุด
                     </div>
                     <Link href="/admin/orders" style={{
                         fontSize: 11, fontWeight: 700, color: 'var(--blue-600)',
                         textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 3,
                         background: 'rgba(59,130,246,0.08)', padding: '4px 10px', borderRadius: 18,
                     }}>
-                        à¸—à¸±à¹‰à¸‡à¸«à¸¡à¸” <ChevronRight size={12} />
+                        ทั้งหมด <ChevronRight size={12} />
                     </Link>
                 </div>
 
@@ -299,7 +299,7 @@ export default function AdminDashboard() {
                         }}>
                             <Inbox size={26} color="var(--blue-400)" strokeWidth={1.5} />
                         </div>
-                        <p>à¸¢à¸±à¸‡à¹„à¸¡à¹ˆà¸¡à¸µà¸­à¸­à¸£à¹Œà¹€à¸”à¸­à¸£à¹Œà¹ƒà¸™à¸£à¸°à¸šà¸š</p>
+                        <p>ยังไม่มีออร์เดอร์ในระบบ</p>
                     </div>
                 ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -341,4 +341,3 @@ export default function AdminDashboard() {
         </div>
     );
 }
-
