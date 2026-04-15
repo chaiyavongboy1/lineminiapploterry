@@ -7,7 +7,7 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 // Use service role to bypass RLS for admin operations
 const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
-// GET /api/admin/lottery-types — Get all lottery types
+// GET /api/admin/lottery-types — Get all lottery types (cached 60s)
 export async function GET() {
     try {
         const { data, error } = await supabaseAdmin
@@ -17,7 +17,11 @@ export async function GET() {
 
         if (error) throw error;
 
-        return NextResponse.json({ success: true, data });
+        return NextResponse.json({ success: true, data }, {
+            headers: {
+                'Cache-Control': 's-maxage=60, stale-while-revalidate=300',
+            },
+        });
     } catch (error: any) {
         console.error('Error fetching lottery types:', error);
         return NextResponse.json(

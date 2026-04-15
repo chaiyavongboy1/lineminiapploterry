@@ -45,39 +45,46 @@ export function generateQuickPick(
     };
 }
 
+// ─── Memoized Intl formatters (created once, reused on every call) ───
+const _currencyFormatter = new Intl.NumberFormat('th-TH', {
+    style: 'currency',
+    currency: 'THB',
+    minimumFractionDigits: 0,
+});
+
+const _dateFormatter = new Intl.DateTimeFormat('th-TH', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+});
+
+const _dateTimeFormatter = new Intl.DateTimeFormat('th-TH', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+});
+
 /**
- * Format currency in THB
+ * Format currency in THB — uses cached Intl formatter
  */
 export function formatCurrency(amount: number): string {
-    return new Intl.NumberFormat('th-TH', {
-        style: 'currency',
-        currency: 'THB',
-        minimumFractionDigits: 0,
-    }).format(amount);
+    return _currencyFormatter.format(amount);
 }
 
 /**
- * Format date to Thai locale
+ * Format date to Thai locale — uses cached Intl formatter
  */
 export function formatDate(date: string | Date): string {
-    return new Intl.DateTimeFormat('th-TH', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-    }).format(new Date(date));
+    return _dateFormatter.format(new Date(date));
 }
 
 /**
- * Format date with time
+ * Format date with time — uses cached Intl formatter
  */
 export function formatDateTime(date: string | Date): string {
-    return new Intl.DateTimeFormat('th-TH', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-    }).format(new Date(date));
+    return _dateTimeFormatter.format(new Date(date));
 }
 
 /**

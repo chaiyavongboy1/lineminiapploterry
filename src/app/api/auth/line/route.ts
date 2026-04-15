@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase/server';
 import type { ApiResponse, User } from '@/types';
 
-// POST /api/auth/line — Upsert user from LINE Mini App profile
+// POST /api/auth/line — Upsert user from LINE Mini App profile, returns role
 export async function POST(request: NextRequest) {
     try {
         const body = await request.json();
@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
 
         const supabase = createServerClient();
 
-        // Upsert user
+        // Upsert user and return full row including role
         const { data, error } = await supabase
             .from('users')
             .upsert(
@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
                 },
                 { onConflict: 'line_user_id' }
             )
-            .select()
+            .select('id, line_user_id, display_name, picture_url, role, created_at, updated_at')
             .single();
 
         if (error) {

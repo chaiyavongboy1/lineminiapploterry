@@ -1,51 +1,22 @@
 'use client';
 
-import { useEffect, useState, ReactNode } from 'react';
+import { ReactNode } from 'react';
 import { useLine } from '@/components/LineProvider';
-import { createClient } from '@/lib/supabase/client';
 import Link from 'next/link';
 import { LayoutDashboard, FileText, Settings, LogOut, ShieldCheck, Trophy, BookOpen, Ticket, Coins } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
-    const { profile, isReady, isLoggedIn, logout } = useLine();
-    const [isAdmin, setIsAdmin] = useState(false);
-    const [checking, setChecking] = useState(true);
+    // isAdmin comes from LineProvider context — no extra DB call needed
+    const { isReady, isLoggedIn, isAdmin, logout } = useLine();
     const pathname = usePathname();
 
-    useEffect(() => {
-        async function checkAdmin() {
-            if (!profile?.userId) {
-                setChecking(false);
-                return;
-            }
-
-            try {
-                const supabase = createClient();
-                const { data } = await supabase
-                    .from('users')
-                    .select('role')
-                    .eq('line_user_id', profile.userId)
-                    .single();
-
-                setIsAdmin(data?.role === 'admin' || data?.role === 'super_admin');
-            } catch (err) {
-                console.error('Admin check failed:', err);
-            } finally {
-                setChecking(false);
-            }
-        }
-
-        if (isReady) {
-            checkAdmin();
-        }
-    }, [isReady, profile]);
-
-    if (!isReady || checking) {
+    // Show loader only while LIFF is initializing (isAdmin is already pre-cached)
+    if (!isReady) {
         return (
             <div style={{ padding: '60px 0', textAlign: 'center' }}>
                 <div className="loading-spinner" />
-                <p style={{ color: 'var(--text-muted)', marginTop: 16 }}>กำลังตรวจสอบสิทธิ์...</p>
+                <p style={{ color: 'var(--text-muted)', marginTop: 16 }}>กำลังโหลด...</p>
             </div>
         );
     }
@@ -72,13 +43,13 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
     }
 
     const navItems = [
-        { href: '/admin',              icon: <LayoutDashboard size={16} />, label: 'Dashboard' },
-        { href: '/admin/orders',       icon: <FileText size={16} />,       label: 'ออร์เดอร์' },
-        { href: '/admin/draw-results', icon: <Trophy size={16} />,         label: 'ผลรางวัล' },
-        { href: '/admin/content',      icon: <BookOpen size={16} />,       label: 'เนื้อหา' },
-        { href: '/admin/lottery-types', icon: <Ticket size={16} />,        label: 'จัดการ Lottery' },
-        { href: '/admin/settings',     icon: <Settings size={16} />,       label: 'ตั้งค่า' },
-        { href: '/admin/prize-tiers',  icon: <Coins size={16} />,          label: 'เงินรางวัล' },
+        { href: '/admin',               icon: <LayoutDashboard size={16} />, label: 'Dashboard' },
+        { href: '/admin/orders',        icon: <FileText size={16} />,        label: 'ออร์เดอร์' },
+        { href: '/admin/draw-results',  icon: <Trophy size={16} />,          label: 'ผลรางวัล' },
+        { href: '/admin/content',       icon: <BookOpen size={16} />,        label: 'เนื้อหา' },
+        { href: '/admin/lottery-types', icon: <Ticket size={16} />,          label: 'จัดการ Lottery' },
+        { href: '/admin/settings',      icon: <Settings size={16} />,        label: 'ตั้งค่า' },
+        { href: '/admin/prize-tiers',   icon: <Coins size={16} />,           label: 'เงินรางวัล' },
     ];
 
     return (
@@ -126,6 +97,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
                         key={item.href}
                         href={item.href}
                         className={`tab ${pathname === item.href ? 'active' : ''}`}
+                        prefetch={true}
                     >
                         {item.icon}
                         {item.label}

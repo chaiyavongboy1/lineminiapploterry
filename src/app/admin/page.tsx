@@ -22,8 +22,8 @@ interface Stats {
 
 function getThaiDate(): string {
     const now = new Date();
-    const thaiMonths = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
-    const thaiDays = ['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัสบดี','ศุกร์','เสาร์'];
+    const thaiMonths = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
+    const thaiDays = ['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์'];
     return `วัน${thaiDays[now.getDay()]}ที่ ${now.getDate()} ${thaiMonths[now.getMonth()]} ${now.getFullYear() + 543}`;
 }
 
@@ -84,36 +84,44 @@ export default function AdminDashboard() {
     }, [profile]);
 
     const statCards = [
-        { label: 'ออร์เดอร์ทั้งหมด', value: stats.totalOrders, icon: <FileText size={20} />,
-          bg: 'linear-gradient(145deg, #eff6ff 0%, #dbeafe 100%)', iconBg: 'var(--grad-primary)',
-          border: 'rgba(59,130,246,0.2)', color: '#1d4ed8', shadow: 'rgba(59,130,246,0.12)' },
-        { label: 'รอตรวจสอบ', value: stats.pendingReview, icon: <Clock size={20} />,
-          bg: 'linear-gradient(145deg, #fffbeb 0%, #fef3c7 100%)', iconBg: 'var(--grad-accent)',
-          border: 'rgba(245,158,11,0.22)', color: '#92400e', shadow: 'rgba(245,158,11,0.12)' },
-        { label: 'ซื้อสำเร็จ', value: stats.approved, icon: <CheckCircle size={20} />,
-          bg: 'linear-gradient(145deg, #ecfdf5 0%, #d1fae5 100%)', iconBg: 'var(--grad-success)',
-          border: 'rgba(16,185,129,0.2)', color: '#065f46', shadow: 'rgba(16,185,129,0.12)' },
-        { label: 'ยอดขายรวม', value: formatCurrency(stats.totalRevenue), icon: <DollarSign size={20} />,
-          bg: 'linear-gradient(145deg, #f0f9ff 0%, #e0f2fe 100%)', iconBg: 'var(--grad-sky)',
-          border: 'rgba(14,165,233,0.2)', color: '#0c4a6e', shadow: 'rgba(14,165,233,0.12)' },
+        {
+            label: 'ออร์เดอร์ทั้งหมด', value: stats.totalOrders, icon: <FileText size={20} />,
+            bg: 'linear-gradient(145deg, #eff6ff 0%, #dbeafe 100%)', iconBg: 'var(--grad-primary)',
+            border: 'rgba(59,130,246,0.2)', color: '#1d4ed8', shadow: 'rgba(59,130,246,0.12)'
+        },
+        {
+            label: 'รอตรวจสอบ', value: stats.pendingReview, icon: <Clock size={20} />,
+            bg: 'linear-gradient(145deg, #fffbeb 0%, #fef3c7 100%)', iconBg: 'var(--grad-accent)',
+            border: 'rgba(245,158,11,0.22)', color: '#92400e', shadow: 'rgba(245,158,11,0.12)'
+        },
+        {
+            label: 'ซื้อสำเร็จ', value: stats.approved, icon: <CheckCircle size={20} />,
+            bg: 'linear-gradient(145deg, #ecfdf5 0%, #d1fae5 100%)', iconBg: 'var(--grad-success)',
+            border: 'rgba(16,185,129,0.2)', color: '#065f46', shadow: 'rgba(16,185,129,0.12)'
+        },
+        {
+            label: 'ยอดขายรวม', value: formatCurrency(stats.totalRevenue), icon: <DollarSign size={20} />,
+            bg: 'linear-gradient(145deg, #f0f9ff 0%, #e0f2fe 100%)', iconBg: 'var(--grad-sky)',
+            border: 'rgba(14,165,233,0.2)', color: '#0c4a6e', shadow: 'rgba(14,165,233,0.12)'
+        },
     ];
 
     const quickActions = [
-        { label: 'ตรวจสลิป',   href: '/admin/orders',       icon: <ClipboardList size={20} />, cls: 'icon-box-grad-blue' },
-        { label: 'ธนาคาร',     href: '/admin/settings',     icon: <CreditCard size={20} />,    cls: 'icon-box-grad-sky' },
-        { label: 'จัดการ Lottery',  href: '/admin/lottery-types', icon: <Ticket size={20} />,        cls: 'icon-box-grad-amber' },
-        { label: 'เนื้อหา',    href: '/admin/content',      icon: <BookOpen size={20} />,      cls: 'icon-box-grad-emerald' },
-        { label: 'ผลรางวัล',   href: '/admin/draw-results', icon: <BarChart2 size={20} />,     cls: 'icon-box-grad-ocean' },
-        { label: 'ตั้งค่า',    href: '/admin/settings',     icon: <Settings size={20} />,      cls: 'icon-box-grad-blue' },
+        { label: 'ตรวจสลิป', href: '/admin/orders', icon: <ClipboardList size={20} />, cls: 'icon-box-grad-blue' },
+        { label: 'ธนาคาร', href: '/admin/settings', icon: <CreditCard size={20} />, cls: 'icon-box-grad-sky' },
+        { label: 'จัดการ Lottery', href: '/admin/lottery-types', icon: <Ticket size={20} />, cls: 'icon-box-grad-amber' },
+        { label: 'เนื้อหา', href: '/admin/content', icon: <BookOpen size={20} />, cls: 'icon-box-grad-emerald' },
+        { label: 'ผลรางวัล', href: '/admin/draw-results', icon: <BarChart2 size={20} />, cls: 'icon-box-grad-ocean' },
+        { label: 'ตั้งค่า', href: '/admin/settings', icon: <Settings size={20} />, cls: 'icon-box-grad-blue' },
     ];
 
     const getStatusInfo = (status: string) => {
         switch (status) {
-            case 'pending_review':  return { label: 'รอตรวจสอบ', color: '#92400e', bg: 'linear-gradient(135deg,#fffbeb,#fef3c7)', border: 'rgba(245,158,11,0.25)' };
-            case 'completed':       return { label: 'สำเร็จ',     color: '#065f46', bg: 'linear-gradient(135deg,#ecfdf5,#d1fae5)', border: 'rgba(16,185,129,0.25)' };
-            case 'rejected':        return { label: 'ปฏิเสธ',     color: '#9f1239', bg: 'linear-gradient(135deg,#fff1f2,#ffe4e6)', border: 'rgba(244,63,94,0.22)' };
-            case 'pending_payment': return { label: 'รอชำระ',     color: '#1d4ed8', bg: 'linear-gradient(135deg,#eff6ff,#dbeafe)', border: 'rgba(59,130,246,0.25)' };
-            default:                return { label: status,       color: '#475569', bg: 'var(--slate-50)',                        border: 'var(--border)' };
+            case 'pending_review': return { label: 'รอตรวจสอบ', color: '#92400e', bg: 'linear-gradient(135deg,#fffbeb,#fef3c7)', border: 'rgba(245,158,11,0.25)' };
+            case 'completed': return { label: 'สำเร็จ', color: '#065f46', bg: 'linear-gradient(135deg,#ecfdf5,#d1fae5)', border: 'rgba(16,185,129,0.25)' };
+            case 'rejected': return { label: 'ปฏิเสธ', color: '#9f1239', bg: 'linear-gradient(135deg,#fff1f2,#ffe4e6)', border: 'rgba(244,63,94,0.22)' };
+            case 'pending_payment': return { label: 'รอชำระ', color: '#1d4ed8', bg: 'linear-gradient(135deg,#eff6ff,#dbeafe)', border: 'rgba(59,130,246,0.25)' };
+            default: return { label: status, color: '#475569', bg: 'var(--slate-50)', border: 'var(--border)' };
         }
     };
 
@@ -122,7 +130,7 @@ export default function AdminDashboard() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                 <div className="skeleton" style={{ height: 110, borderRadius: 22 }} />
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-                    {[1,2,3,4].map(i => <div key={i} className="skeleton" style={{ height: 115, borderRadius: 16 }} />)}
+                    {[1, 2, 3, 4].map(i => <div key={i} className="skeleton" style={{ height: 115, borderRadius: 16 }} />)}
                 </div>
             </div>
         );
@@ -181,7 +189,7 @@ export default function AdminDashboard() {
                         }}>
                             {/* BG icon */}
                             <div style={{ position: 'absolute', right: -8, bottom: -8, opacity: 0.1, color: c.color }}>
-                                {React.cloneElement(c.icon as React.ReactElement<{size:number}>, { size: 52 })}
+                                {React.cloneElement(c.icon as React.ReactElement<{ size: number }>, { size: 52 })}
                             </div>
                             {/* Shine */}
                             <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '40%', background: 'linear-gradient(180deg, rgba(255,255,255,0.5) 0%, transparent 100%)', borderRadius: '16px 16px 0 0', pointerEvents: 'none' }} />
