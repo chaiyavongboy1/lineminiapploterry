@@ -78,51 +78,76 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
             .eq('draw_result_id', id)
             .order('is_winner', { ascending: false });
 
-        let enriched = [];
-        if (results) {
-            enriched = await Promise.all(
-                results.map(async (r: any) => {
-                    if (r.order_line?.order_id) {
-                        const { data: order } = await supabase
-                            .from('orders')
-                            .select(`
-                                order_number,
-                                purchased_at,
-                                user:users!orders_user_id_fkey(id, display_name, line_user_id)
-                            `)
-                            .eq('id', r.order_line.order_id)
-                            .single();
-                        
-                        
-                        let userProfile = null;
-                        let orderUser = null;
+        let enriched: any[] = [];
+        if (results && results.length > 0) {
+            // Batch: collect all unique order_ids
+            const orderIds = Array.from(new Set(
+                results
+                    .filter((r: any) => r.order_line?.order_id)
+                    .map((r: any) => r.order_line.order_id)
+            ));
 
-                        if (order?.user) {
-                            orderUser = Array.isArray(order.user) ? order.user[0] : order.user;
-                        }
+            // Batch fetch all orders + users in one query
+            let ordersMap = new Map<string, any>();
+            let userProfilesMap = new Map<string, any>();
 
-                        if (orderUser?.id) {
-                            const { data: profile } = await supabase
-                                .from('user_profiles')
-                                .select('bank_name, bank_account_number, promptpay_number')
-                                .eq('user_id', orderUser.id)
-                                .single();
-                            userProfile = profile;
-                        }
+            if (orderIds.length > 0) {
+                const { data: ordersData } = await supabase
+                    .from('orders')
+                    .select(`
+                        id,
+                        order_number,
+                        purchased_at,
+                        user:users!orders_user_id_fkey(id, display_name, line_user_id)
+                    `)
+                    .in('id', orderIds);
 
+                for (const o of ordersData || []) {
+                    ordersMap.set(o.id, o);
+                }
+
+                // Collect all user IDs for profile batch fetch
+                const userIds = Array.from(new Set(
+                    (ordersData || [])
+                        .map((o: any) => {
+                            const u = Array.isArray(o.user) ? o.user[0] : o.user;
+                            return u?.id;
+                        })
+                        .filter(Boolean)
+                ));
+
+                if (userIds.length > 0) {
+                    const { data: profiles } = await supabase
+                        .from('user_profiles')
+                        .select('user_id, bank_name, bank_account_number, promptpay_number')
+                        .in('user_id', userIds);
+
+                    for (const p of profiles || []) {
+                        userProfilesMap.set(p.user_id, p);
+                    }
+                }
+            }
+
+            // Map results using in-memory data — zero additional queries
+            enriched = results.map((r: any) => {
+                if (r.order_line?.order_id) {
+                    const order = ordersMap.get(r.order_line.order_id);
+                    if (order) {
+                        const orderUser = Array.isArray(order.user) ? order.user[0] : order.user;
+                        const userProfile = orderUser?.id ? userProfilesMap.get(orderUser.id) || null : null;
                         return {
                             ...r,
-                            order_info: order ? {
+                            order_info: {
                                 order_number: order.order_number,
                                 purchased_at: order.purchased_at ?? null,
                                 user: orderUser,
-                                profile: userProfile
-                            } : undefined,
+                                profile: userProfile,
+                            },
                         };
                     }
-                    return r;
-                })
-            );
+                }
+                return r;
+            });
         }
 
         return NextResponse.json({ success: true, data: { drawResult, lineResults: enriched } });

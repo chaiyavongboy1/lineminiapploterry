@@ -7,6 +7,7 @@ export async function GET(request: NextRequest) {
     try {
         const { searchParams } = new URL(request.url);
         const status = searchParams.get('status');
+        const lotteryTypeId = searchParams.get('lotteryTypeId');
         const lineUserId = searchParams.get('adminLineUserId');
         const page = parseInt(searchParams.get('page') || '1', 10);
         const limit = parseInt(searchParams.get('limit') || '20', 10);
@@ -28,24 +29,19 @@ export async function GET(request: NextRequest) {
             .eq('line_user_id', lineUserId)
             .single();
 
-        if (!admin || admin.role !== 'admin') {
+        if (!admin || (admin.role !== 'admin' && admin.role !== 'super_admin')) {
             return NextResponse.json<ApiResponse>(
                 { success: false, error: 'Forbidden — admin only' },
                 { status: 403 }
             );
         }
 
-        // Count total
+        // Build both queries with shared filters
         let countQuery = supabase
             .from('orders')
             .select('id', { count: 'exact', head: true });
-        if (status && status !== 'all') {
-            countQuery = countQuery.eq('status', status);
-        }
-        const { count: totalCount } = await countQuery;
 
-        // Fetch paginated orders
-        let query = supabase
+        let dataQuery = supabase
             .from('orders')
             .select(`
                 *,
@@ -58,10 +54,19 @@ export async function GET(request: NextRequest) {
             .range(offset, offset + limit - 1);
 
         if (status && status !== 'all') {
-            query = query.eq('status', status);
+            countQuery = countQuery.eq('status', status);
+            dataQuery = dataQuery.eq('status', status);
+        }
+        if (lotteryTypeId && lotteryTypeId !== 'all') {
+            countQuery = countQuery.eq('lottery_type_id', lotteryTypeId);
+            dataQuery = dataQuery.eq('lottery_type_id', lotteryTypeId);
         }
 
-        const { data: orders, error } = await query;
+        // Run count + data in parallel
+        const [{ count: totalCount }, { data: orders, error }] = await Promise.all([
+            countQuery,
+            dataQuery,
+        ]);
 
         if (error) {
             console.error('Admin get orders error:', error);

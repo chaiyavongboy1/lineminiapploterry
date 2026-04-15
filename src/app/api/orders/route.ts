@@ -180,18 +180,13 @@ export async function GET(request: NextRequest) {
             );
         }
 
-        // Count total orders for pagination
+        // Build both queries with shared filters
         let countQuery = supabase
             .from('orders')
             .select('id', { count: 'exact', head: true })
             .eq('user_id', user.id);
-        if (lotteryTypeId) {
-            countQuery = countQuery.eq('lottery_type_id', lotteryTypeId);
-        }
-        const { count: totalCount } = await countQuery;
 
-        // Fetch paginated orders
-        let query = supabase
+        let dataQuery = supabase
             .from('orders')
             .select(`
                 *,
@@ -205,10 +200,15 @@ export async function GET(request: NextRequest) {
             .range(offset, offset + limit - 1);
 
         if (lotteryTypeId) {
-            query = query.eq('lottery_type_id', lotteryTypeId);
+            countQuery = countQuery.eq('lottery_type_id', lotteryTypeId);
+            dataQuery = dataQuery.eq('lottery_type_id', lotteryTypeId);
         }
 
-        const { data: orders, error } = await query;
+        // Run count + data in parallel
+        const [{ count: totalCount }, { data: orders, error }] = await Promise.all([
+            countQuery,
+            dataQuery,
+        ]);
 
         if (error) {
             console.error('Get orders error:', error);

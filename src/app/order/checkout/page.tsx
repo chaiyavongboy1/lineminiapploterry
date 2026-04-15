@@ -9,7 +9,7 @@ import {
     ArrowLeft, Copy, Check, Camera, Upload,
     CheckCircle, Loader2, Ticket, History
 } from 'lucide-react';
-import { formatCurrency } from '@/lib/utils';
+import { formatCurrency, formatDrawDate } from '@/lib/utils';
 import { useImageUpload } from '@/hooks/useImageUpload';
 
 interface CheckoutLine {
@@ -276,7 +276,7 @@ function CheckoutContent() {
                         {formatCurrency(totalAmount)}
                     </div>
                     <div style={{ fontSize: 13, color: 'var(--primary)', fontWeight: 600, marginTop: 6, lineHeight: 1.5 }}>
-                        คุณกำลังฝากซื้อ {data.lotteryName} ประจำงวดวันที่ {new Date(data.drawDate).toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' })}
+                        คุณกำลังฝากซื้อ {data.lotteryName} ประจำงวดวันที่ {formatDrawDate(data.drawDate)}
                     </div>
                     <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
                         {totalLines} Lines × ฿{data.pricePerLine} + ค่าบริการ ฿{serviceFee}

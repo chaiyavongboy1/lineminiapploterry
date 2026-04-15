@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useLine } from '@/components/LineProvider';
 import { createClient } from '@/lib/supabase/client';
-import { formatDate } from '@/lib/utils';
+import { formatDrawDate } from '@/lib/utils';
 import { Trophy, Download, RefreshCw, Eye, AlertCircle, CheckCircle2, Clock, ExternalLink, ShieldCheck, XCircle } from 'lucide-react';
 import Link from 'next/link';
 import type { LotteryType } from '@/types';
@@ -453,7 +453,7 @@ export default function AdminDrawResultsPage() {
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                                             <span style={{ fontSize: 13, fontWeight: 700 }}>
-                                                📅 {formatDate(r.drawDate)}
+                                                📅 {formatDrawDate(r.drawDate)}
                                             </span>
                                             {r.multiplier && (
                                                 <span style={{
@@ -702,7 +702,7 @@ export default function AdminDrawResultsPage() {
                         if (isEditingThis) {
                             return (
                                 <div key={draw.id} className="card" style={{ padding: 16, border: '2px solid var(--accent)' }}>
-                                    <h4 style={{ fontSize: 14, fontWeight: 700, marginBottom: 12 }}>แก้ไขผลรางวัล ({formatDate(draw.draw_date)})</h4>
+                                    <h4 style={{ fontSize: 14, fontWeight: 700, marginBottom: 12 }}>แก้ไขผลรางวัล ({formatDrawDate(draw.draw_date)})</h4>
                                     <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
                                         {manualForm.numbers.map((n, i) => (
                                             <input
@@ -759,7 +759,7 @@ export default function AdminDrawResultsPage() {
                                     <Link href={`/admin/draw-results/${draw.id}`} style={{ textDecoration: 'none', color: 'inherit', flex: 1 }}>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                                             <div style={{ fontSize: 14, fontWeight: 700 }}>
-                                                📅 {formatDate(draw.draw_date)}
+                                                📅 {formatDrawDate(draw.draw_date)}
                                             </div>
                                             {isManual && <span style={{ fontSize: 10, background: 'var(--accent)', color: '#fff', padding: '2px 6px', borderRadius: 4 }}>กรอกเอง</span>}
                                         </div>

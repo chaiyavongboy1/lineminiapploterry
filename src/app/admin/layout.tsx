@@ -28,7 +28,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
                     .eq('line_user_id', profile.userId)
                     .single();
 
-                setIsAdmin(data?.role === 'admin');
+                setIsAdmin(data?.role === 'admin' || data?.role === 'super_admin');
             } catch (err) {
                 console.error('Admin check failed:', err);
             } finally {

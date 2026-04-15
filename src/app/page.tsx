@@ -16,19 +16,31 @@ function getNextDrawDate(drawDays: string[]): string {
         sunday: 0, monday: 1, tuesday: 2, wednesday: 3,
         thursday: 4, friday: 5, saturday: 6,
     };
+    // Use UTC to avoid timezone-based off-by-one day errors
     const now = new Date();
-    const today = now.getDay();
+    const todayUTC = now.getUTCDay();
     const drawDayNumbers = drawDays.map(d => dayMap[d.toLowerCase()]).filter(n => n !== undefined);
     if (drawDayNumbers.length === 0) return 'TBD';
     let minDays = 8;
     for (const dayNum of drawDayNumbers) {
-        let diff = dayNum - today;
-        if (diff <= 0) diff += 7;
+        let diff = dayNum - todayUTC;
+        if (diff < 0) diff += 7;
         if (diff < minDays) minDays = diff;
     }
     const nextDate = new Date(now);
-    nextDate.setDate(now.getDate() + minDays);
-    return nextDate.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    nextDate.setUTCDate(now.getUTCDate() + minDays);
+    // Format YYYY-MM-DD parts from UTC to avoid locale timezone shift
+    const year = nextDate.getUTCFullYear();
+    const month = nextDate.getUTCMonth(); // 0-indexed
+    const day = nextDate.getUTCDate();
+    const thaiMonths = [
+        'มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน',
+        'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม',
+        'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม',
+    ];
+    const dayNames = ['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์'];
+    const buddhistYear = year + 543;
+    return `${dayNames[nextDate.getUTCDay()]}ที่ ${day} ${thaiMonths[month]} ${buddhistYear}`;
 }
 
 function getDrawDaysLabel(drawDays: string[]): string {

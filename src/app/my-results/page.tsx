@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useLine } from '@/components/LineProvider';
 import { createClient } from '@/lib/supabase/client';
-import { formatCurrency, formatDateTime } from '@/lib/utils';
+import { formatCurrency, formatDateTime, formatDrawDate } from '@/lib/utils';
 import { Trophy, Calendar, DollarSign, ArrowLeft, FileText, ChevronDown, ChevronUp, Image as ImageIcon } from 'lucide-react';
 import Pagination, { paginateItems } from '@/components/Pagination';
 import LotteryLogo from '@/components/LotteryLogo';
@@ -222,11 +222,7 @@ export default function MyResultsPage() {
                                             marginTop: 2,
                                         }}>
                                             <Calendar size={11} />
-                                            งวดวันที่ {new Date(result.draw_result.draw_date).toLocaleDateString('th-TH', {
-                                                year: 'numeric',
-                                                month: 'long',
-                                                day: 'numeric',
-                                            })}
+                                            งวดวันที่ {formatDrawDate(result.draw_result.draw_date)}
                                         </div>
                                         {result.order_number && (
                                             <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
@@ -254,7 +250,7 @@ export default function MyResultsPage() {
                                         {/* Winning Numbers */}
                                         <div style={{ marginBottom: 12 }}>
                                             <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 6 }}>
-                                                ผลลอตเตอรี่ ({new Date(result.draw_result.draw_date).toLocaleDateString('en-US')})
+                                                ผลลอตเตอรี่ ({formatDrawDate(result.draw_result.draw_date)})
                                             </p>
                                             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                                                 {result.draw_result.winning_numbers.map((n, i) => (

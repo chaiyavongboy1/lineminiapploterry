@@ -40,7 +40,10 @@ export async function POST(req: NextRequest) {
                 .select('draw_date')
                 .eq('lottery_type_id', lottery_type_id);
 
-            const existingDates = (existingDraws || []).map((d: { draw_date: string }) => d.draw_date);
+            const existingDates = (existingDraws || []).map((d: { draw_date: string }) =>
+                // Normalize: strip time part in case Supabase returns "2026-04-12T00:00:00+00:00"
+                d.draw_date.split('T')[0]
+            );
 
             // Mark which are new vs already exist
             const previewResults = results.map(r => ({
@@ -125,7 +128,10 @@ export async function POST(req: NextRequest) {
             .select('draw_date')
             .eq('lottery_type_id', lottery_type_id);
 
-        const existingDates = (existingDraws || []).map((d: { draw_date: string }) => d.draw_date);
+        const existingDates = (existingDraws || []).map((d: { draw_date: string }) =>
+            // Normalize: strip time part in case Supabase returns "2026-04-12T00:00:00+00:00"
+            d.draw_date.split('T')[0]
+        );
 
         // Filter out results that already exist
         const newResults = results.filter(r => !existingDates.includes(r.drawDate));

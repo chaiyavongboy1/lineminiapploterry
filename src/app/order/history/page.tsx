@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { useLine } from '@/components/LineProvider';
 import { createClient } from '@/lib/supabase/client';
-import { formatCurrency, formatDateTime } from '@/lib/utils';
+import { formatCurrency, formatDateTime, formatDrawDate } from '@/lib/utils';
 import { ArrowLeft, Ticket, FileText, Clock, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 import type { Order, OrderStatus, LotteryType } from '@/types';
 import { ORDER_STATUS_LABELS } from '@/types';
@@ -227,7 +227,7 @@ export default function OrderHistoryPage() {
                             {/* Draw date info */}
                             {order.draw_date && (
                                 <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 4 }}>
-                                    📅 งวดวันที่: {new Date(order.draw_date).toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' })}
+                                    📅 งวดวันที่: {formatDrawDate(order.draw_date)}
                                 </div>
                             )}
 
@@ -328,7 +328,7 @@ export default function OrderHistoryPage() {
                                             </div>
                                             {order.draw_date && (
                                                 <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 6 }}>
-                                                    📅 งวดวันที่: {new Date(order.draw_date).toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' })}
+                                                    📅 งวดวันที่: {formatDrawDate(order.draw_date)}
                                                 </div>
                                             )}
                                             {order.purchased_at && (

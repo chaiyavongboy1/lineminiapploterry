@@ -79,3 +79,64 @@ export function formatDateTime(date: string | Date): string {
         minute: '2-digit',
     }).format(new Date(date));
 }
+
+/**
+ * Format draw date from "YYYY-MM-DD" string WITHOUT timezone conversion.
+ * This prevents differences between TH (UTC+7) and US (UTC-5) admins.
+ * Parses the string directly instead of using new Date() which applies local timezone.
+ */
+export function formatDrawDate(dateStr: string): string {
+    if (!dateStr) return '-';
+    const parts = dateStr.split('-');
+    if (parts.length !== 3) return dateStr;
+    const year = parseInt(parts[0], 10);
+    const month = parseInt(parts[1], 10) - 1; // 0-indexed
+    const day = parseInt(parts[2], 10);
+
+    const thaiMonths = [
+        'มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน',
+        'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม',
+        'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม',
+    ];
+    const buddhistYear = year + 543;
+    return `${day} ${thaiMonths[month]} ${buddhistYear}`;
+}
+
+/**
+ * Compute the next draw date based on lottery draw_days config.
+ * Returns "YYYY-MM-DD" string.
+ */
+export function computeNextDrawDate(drawDays: string[]): string {
+    const dayMap: Record<string, number> = {
+        sunday: 0, monday: 1, tuesday: 2, wednesday: 3,
+        thursday: 4, friday: 5, saturday: 6,
+    };
+    // Use UTC to prevent timezone-based off-by-one day errors
+    const now = new Date();
+    const todayUTC = now.getUTCDay();
+    const drawDayNumbers = drawDays
+        .map(d => dayMap[d.toLowerCase()])
+        .filter(n => n !== undefined);
+
+    if (drawDayNumbers.length === 0) {
+        // Fallback: tomorrow in UTC
+        const tomorrow = new Date(now);
+        tomorrow.setUTCDate(now.getUTCDate() + 1);
+        return tomorrow.toISOString().split('T')[0];
+    }
+
+    let minDays = 8;
+    for (const dayNum of drawDayNumbers) {
+        let diff = dayNum - todayUTC;
+        if (diff < 0) diff += 7;
+        if (diff < minDays) minDays = diff;
+    }
+
+    const nextDate = new Date(now);
+    nextDate.setUTCDate(now.getUTCDate() + minDays);
+    // Return YYYY-MM-DD in UTC to stay timezone-safe
+    const y = nextDate.getUTCFullYear();
+    const m = String(nextDate.getUTCMonth() + 1).padStart(2, '0');
+    const d = String(nextDate.getUTCDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+}

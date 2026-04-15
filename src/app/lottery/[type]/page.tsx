@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useLine } from '@/components/LineProvider';
 import { createClient } from '@/lib/supabase/client';
-import { generateQuickPick, formatCurrency } from '@/lib/utils';
+import { generateQuickPick, formatCurrency, computeNextDrawDate } from '@/lib/utils';
 import { ArrowLeft, Shuffle, Trash2, ShoppingCart, Dices, AlertCircle, User } from 'lucide-react';
 import type { LotteryType, NumberSelection } from '@/types';
 import Link from 'next/link';
@@ -227,8 +227,7 @@ export default function LotteryPage() {
         }
         setCheckingProfile(false);
 
-        const drawDate = new Date();
-        drawDate.setDate(drawDate.getDate() + 1);
+        const drawDate = computeNextDrawDate(lottery.draw_days || []);
 
         const checkoutData = {
             lotteryId: lottery.id,
@@ -241,7 +240,7 @@ export default function LotteryPage() {
                 specialNumber: s.specialNumber,
                 isQuickPick: s.isQuickPick,
             })),
-            drawDate: drawDate.toISOString().split('T')[0],
+            drawDate,
             userId: profile.userId,
         };
 

@@ -24,7 +24,7 @@ export async function GET(req: NextRequest) {
             return NextResponse.json({ success: false, error: 'User not found' }, { status: 404 });
         }
 
-        // Get user's orders with draw results
+        // Get user's orders with draw results — single query, no N+1
         const { data: orders } = await supabase
             .from('orders')
             .select(`
@@ -33,6 +33,7 @@ export async function GET(req: NextRequest) {
                 draw_date,
                 status,
                 purchased_at,
+                lottery_type_id,
                 lottery_type:lottery_types(id, name),
                 order_lines(
                     id,
@@ -50,41 +51,80 @@ export async function GET(req: NextRequest) {
             return NextResponse.json({ success: true, data: [] });
         }
 
-        // For each order, get line results
-        const ordersWithResults = await Promise.all(
-            orders.map(async (order) => {
-                const lineIds = order.order_lines?.map((l: { id: string }) => l.id) || [];
+        // Collect all order line IDs and all lottery_type+draw_date pairs to batch-fetch
+        const allLineIds: string[] = [];
+        const drawLookups = new Set<string>(); // "lotteryTypeId|drawDate"
 
-                if (!lineIds.length) {
-                    return { ...order, results: [], hasDrawResult: false };
-                }
+        for (const order of orders) {
+            const lines = order.order_lines as { id: string }[] | null;
+            if (lines) {
+                for (const l of lines) allLineIds.push(l.id);
+            }
+            const lt = order.lottery_type as unknown as { id: string } | null;
+            if (lt?.id && order.draw_date) {
+                drawLookups.add(`${lt.id}|${order.draw_date}`);
+            }
+        }
 
-                const { data: lineResults } = await supabase
+        // Batch fetch: line results + draw results in parallel
+        const [lineResultsRes, drawResultsRes] = await Promise.all([
+            // All order_line_results at once instead of per-order
+            allLineIds.length > 0
+                ? supabase
                     .from('order_line_results')
                     .select(`
                         *,
                         prize_tier:prize_tiers(prize_name, prize_amount, tier_order),
                         draw_result:draw_results(draw_date, winning_numbers, special_number)
                     `)
-                    .in('order_line_id', lineIds);
+                    .in('order_line_id', allLineIds)
+                : Promise.resolve({ data: [] }),
 
-                // Get draw result for this lottery+date
-                const lotteryType = order.lottery_type as unknown as { id: string } | null;
-                const { data: drawResult } = await supabase
-                    .from('draw_results')
-                    .select('id, draw_date, winning_numbers, special_number')
-                    .eq('lottery_type_id', lotteryType?.id || '')
-                    .eq('draw_date', order.draw_date)
-                    .single();
+            // All draw results at once — fetch all for relevant lottery types
+            supabase
+                .from('draw_results')
+                .select('id, draw_date, winning_numbers, special_number, lottery_type_id'),
+        ]);
 
-                return {
-                    ...order,
-                    results: lineResults || [],
-                    drawResult: drawResult || null,
-                    hasDrawResult: !!drawResult,
-                };
-            })
-        );
+        const allLineResults = lineResultsRes.data || [];
+        const allDrawResults = drawResultsRes.data || [];
+
+        // Index line results by order_line_id for fast lookup
+        const lineResultsByLineId = new Map<string, typeof allLineResults>();
+        for (const lr of allLineResults) {
+            const arr = lineResultsByLineId.get(lr.order_line_id) || [];
+            arr.push(lr);
+            lineResultsByLineId.set(lr.order_line_id, arr);
+        }
+
+        // Index draw results by "lotteryTypeId|drawDate"
+        const drawResultMap = new Map<string, (typeof allDrawResults)[0]>();
+        for (const dr of allDrawResults) {
+            drawResultMap.set(`${dr.lottery_type_id}|${dr.draw_date}`, dr);
+        }
+
+        // Build response — no additional DB queries
+        const ordersWithResults = orders.map((order) => {
+            const lines = order.order_lines as { id: string }[] | null;
+            const lineIds = lines?.map(l => l.id) || [];
+
+            const results: typeof allLineResults = [];
+            for (const lid of lineIds) {
+                const lr = lineResultsByLineId.get(lid);
+                if (lr) results.push(...lr);
+            }
+
+            const lt = order.lottery_type as unknown as { id: string } | null;
+            const drawKey = `${lt?.id || ''}|${order.draw_date}`;
+            const drawResult = drawResultMap.get(drawKey) || null;
+
+            return {
+                ...order,
+                results,
+                drawResult,
+                hasDrawResult: !!drawResult,
+            };
+        });
 
         return NextResponse.json({ success: true, data: ordersWithResults });
     } catch (err) {

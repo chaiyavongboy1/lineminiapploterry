@@ -15,17 +15,12 @@ export async function GET(req: NextRequest) {
 
         const supabase = createServerClient();
 
-        // Build count query
+        // Build count + data queries with shared filters
         let countQuery = supabase
             .from('draw_results')
             .select('id', { count: 'exact', head: true });
-        if (lotteryTypeId) {
-            countQuery = countQuery.eq('lottery_type_id', lotteryTypeId);
-        }
-        const { count: totalCount } = await countQuery;
 
-        // Build data query with server-side pagination
-        let query = supabase
+        let dataQuery = supabase
             .from('draw_results')
             .select(`
                 *,
@@ -35,10 +30,15 @@ export async function GET(req: NextRequest) {
             .range(offset, offset + limit - 1);
 
         if (lotteryTypeId) {
-            query = query.eq('lottery_type_id', lotteryTypeId);
+            countQuery = countQuery.eq('lottery_type_id', lotteryTypeId);
+            dataQuery = dataQuery.eq('lottery_type_id', lotteryTypeId);
         }
 
-        const { data, error } = await query;
+        // Run count + data in parallel
+        const [{ count: totalCount }, { data, error }] = await Promise.all([
+            countQuery,
+            dataQuery,
+        ]);
 
         if (error) {
             return NextResponse.json({ success: false, error: error.message }, { status: 500 });

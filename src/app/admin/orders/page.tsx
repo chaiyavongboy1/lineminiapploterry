@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useLine } from '@/components/LineProvider';
 import { createClient } from '@/lib/supabase/client';
+import { useSearchParams } from 'next/navigation';
 import { formatCurrency, formatDateTime } from '@/lib/utils';
 import { ORDER_STATUS_LABELS } from '@/types';
 import type { Order, OrderStatus, LotteryType } from '@/types';
@@ -32,26 +33,44 @@ const statusIcons: Record<OrderStatus, React.ReactNode> = {
 
 export default function AdminOrdersPage() {
     const { profile } = useLine();
+    const searchParams = useSearchParams();
     const [orders, setOrders] = useState<Order[]>([]);
     const [loading, setLoading] = useState(true);
-    const [filter, setFilter] = useState('all');
+    const [filter, setFilter] = useState(() => searchParams.get('status') || 'all');
     const [lotteryTypes, setLotteryTypes] = useState<LotteryType[]>([]);
-    const [selectedLotteryId, setSelectedLotteryId] = useState<string>('all');
+    const [selectedLotteryId, setSelectedLotteryId] = useState<string>(() => searchParams.get('lotteryTypeId') || 'all');
     const [currentPage, setCurrentPage] = useState(1);
     const [totalItems, setTotalItems] = useState(0);
+    const [pendingByType, setPendingByType] = useState<Record<string, number>>({});
     const ITEMS_PER_PAGE = 10;
 
-    // Load lottery types
+    // Load lottery types + pending counts once on mount
     useEffect(() => {
-        async function loadTypes() {
-            const supabase = createClient();
-            const { data } = await supabase.from('lottery_types').select('*').eq('is_active', true).order('name');
-            if (data) setLotteryTypes(data);
-        }
-        loadTypes();
-    }, []);
+        if (!profile?.userId) return;
 
-    // Fetch orders with server-side pagination
+        async function loadInitialData() {
+            try {
+                const supabase = createClient();
+                // Parallel: lottery types + pending counts
+                const [typesResult, statsRes] = await Promise.all([
+                    supabase.from('lottery_types').select('*').eq('is_active', true).order('name'),
+                    fetch(`/api/admin/stats?adminLineUserId=${profile!.userId}`),
+                ]);
+
+                if (typesResult.data) setLotteryTypes(typesResult.data);
+
+                const statsResult = await statsRes.json();
+                if (statsResult.success && statsResult.data?.pendingByLotteryType) {
+                    setPendingByType(statsResult.data.pendingByLotteryType);
+                }
+            } catch (err) {
+                console.warn('Failed to load initial data:', err);
+            }
+        }
+        loadInitialData();
+    }, [profile]);
+
+    // Fetch orders with server-side pagination (re-runs on filter/page changes)
     useEffect(() => {
         if (!profile?.userId) return;
 
@@ -64,6 +83,9 @@ export default function AdminOrdersPage() {
                     page: String(currentPage),
                     limit: String(ITEMS_PER_PAGE),
                 });
+                if (selectedLotteryId !== 'all') {
+                    params.set('lotteryTypeId', selectedLotteryId);
+                }
                 const res = await fetch(`/api/admin/orders?${params}`);
                 const result = await res.json();
                 if (result.success && result.data) {
@@ -78,7 +100,7 @@ export default function AdminOrdersPage() {
         }
 
         fetchOrders();
-    }, [profile, filter, currentPage]);
+    }, [profile, filter, currentPage, selectedLotteryId]);
 
     const pendingReviewCount = () =>
         0; // Count is now handled server-side
@@ -124,6 +146,8 @@ export default function AdminOrdersPage() {
                         const activeShadow = isPowerball
                             ? '0 2px 8px rgba(231,76,60,0.3)'
                             : '0 2px 8px rgba(245,158,11,0.3)';
+                        // Per-type pending badge count
+                        const typePendingCount = pendingByType[lt.id] || 0;
 
 
                         return (
@@ -141,6 +165,24 @@ export default function AdminOrdersPage() {
                                 }}
                             >
                                 {emoji} {lt.name}
+                                {typePendingCount > 0 && (
+                                    <span style={{
+                                        position: 'absolute',
+                                        top: -6,
+                                        right: -6,
+                                        background: 'var(--danger)',
+                                        color: '#fff',
+                                        borderRadius: 10,
+                                        padding: '1px 5px',
+                                        fontSize: 10,
+                                        fontWeight: 700,
+                                        lineHeight: 1.4,
+                                        minWidth: 16,
+                                        textAlign: 'center',
+                                    }}>
+                                        {typePendingCount}
+                                    </span>
+                                )}
                             </button>
                         );
                     })}
@@ -156,14 +198,17 @@ export default function AdminOrdersPage() {
                         onClick={() => { setFilter(f.value); setCurrentPage(1); }}
                     >
                         {f.label}
-                        {f.value === 'pending_review' && orders.filter(o => o.status === 'pending_review').length > 0 && (
-                            <span style={{
-                                background: 'var(--danger)', color: '#fff',
-                                borderRadius: 10, padding: '1px 6px', fontSize: 10, marginLeft: 4,
-                            }}>
-                                {orders.filter(o => o.status === 'pending_review').length}
-                            </span>
-                        )}
+                        {f.value === 'pending_review' && (() => {
+                            const totalPending = Object.values(pendingByType).reduce((sum, n) => sum + n, 0);
+                            return totalPending > 0 ? (
+                                <span style={{
+                                    background: 'var(--danger)', color: '#fff',
+                                    borderRadius: 10, padding: '1px 6px', fontSize: 10, marginLeft: 4,
+                                }}>
+                                    {totalPending}
+                                </span>
+                            ) : null;
+                        })()}
                     </button>
                 ))}
             </div>

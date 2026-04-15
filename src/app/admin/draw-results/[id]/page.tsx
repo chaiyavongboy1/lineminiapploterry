@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
-import { formatDate } from '@/lib/utils';
+import { formatDate, formatDrawDate } from '@/lib/utils';
 import { ArrowLeft, Trophy, User, Calendar, Percent, DollarSign } from 'lucide-react';
 import Link from 'next/link';
 import { compressImage, validateImageFile } from '@/lib/image-compress';
@@ -66,15 +66,8 @@ function formatDateTimeThai(dateStr: string): string {
     });
 }
 
-function formatDateThai(dateStr: string): string {
-    const d = new Date(dateStr);
-    return d.toLocaleDateString('th-TH', {
-        timeZone: 'Asia/Bangkok',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-    });
-}
+// For draw_date (YYYY-MM-DD strings), use formatDrawDate to avoid timezone shifts.
+// For timestamps (ISO strings with time), use formatDateTimeThai above.
 
 export default function DrawResultDetailPage() {
     const params = useParams();
@@ -207,7 +200,7 @@ export default function DrawResultDetailPage() {
                         {lotteryName === 'Powerball' ? '🔴' : '🟡'} ผลรางวัล {lotteryName}
                     </h2>
                     <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-                        วันที่ {formatDate(drawResult.draw_date)} — บันทึก {formatDateTimeThai(drawResult.created_at)}
+                        วันที่ {formatDrawDate(drawResult.draw_date)} — บันทึก {formatDateTimeThai(drawResult.created_at)}
                     </p>
                 </div>
             </div>
@@ -301,7 +294,7 @@ export default function DrawResultDetailPage() {
                         marginBottom: 16,
                     }}>
                         <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--success)', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
-                            💸 สรุปยอดที่ต้องโอน (งวด {formatDateThai(drawResult.draw_date)})
+                            💸 สรุปยอดที่ต้องโอน (งวด {formatDrawDate(drawResult.draw_date)})
                         </div>
 
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -363,7 +356,7 @@ export default function DrawResultDetailPage() {
                     gap: 6,
                 }}>
                     <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--primary)', marginBottom: 2 }}>
-                        📋 ข้อมูลสำหรับผู้ถูกรางวัล (งวด {formatDateThai(drawResult.draw_date)})
+                        📋 ข้อมูลสำหรับผู้ถูกรางวัล (งวด {formatDrawDate(drawResult.draw_date)})
                     </div>
                     {taxSettings.taxRate && (
                         <div style={{ fontSize: 12, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -482,7 +475,7 @@ export default function DrawResultDetailPage() {
                                         <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: 'var(--text-muted)' }}>
                                             <Calendar size={11} />
                                             <span>งวดประกาศรางวัล:</span>
-                                            <strong style={{ color: 'var(--text)' }}>{formatDateThai(drawResult.draw_date)}</strong>
+                                            <strong style={{ color: 'var(--text)' }}>{formatDrawDate(drawResult.draw_date)}</strong>
                                         </div>
 
                                         {/* Purchased At */}
