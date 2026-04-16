@@ -23,11 +23,12 @@ export async function GET(request: NextRequest) {
         const supabase = createServerClient();
 
         // Verify admin role
-        const { data: admin } = await supabase
+        const { data: adminRaw } = await supabase
             .from('users')
             .select('id, role')
             .eq('line_user_id', lineUserId)
-            .single() as { data: { id: string; role: string } | null };
+            .single();
+        const admin = adminRaw as { id: string; role: string } | null;
 
         if (!admin || (admin.role !== 'admin' && admin.role !== 'super_admin')) {
             return NextResponse.json<ApiResponse>(

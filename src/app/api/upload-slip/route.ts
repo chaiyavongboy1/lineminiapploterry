@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
             .getPublicUrl(fileName);
 
         // Save payment slip record
-        const { error: slipError } = await supabase
+        const { error: slipError } = await (supabase as any)
             .from('payment_slips')
             .insert({
                 order_id: orderId,
@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
         }
 
         // Update order status to pending_review
-        const { error: updateError } = await supabase
+        const { error: updateError } = await (supabase as any)
             .from('orders')
             .update({
                 status: 'pending_review',
@@ -82,7 +82,7 @@ export async function POST(request: NextRequest) {
 
         // Notify admin via LINE
         try {
-            const { data: order } = await supabase
+            const { data: order } = await (supabase as any)
                 .from('orders')
                 .select('order_number, total_amount, user:users!orders_user_id_fkey(display_name)')
                 .eq('id', orderId)

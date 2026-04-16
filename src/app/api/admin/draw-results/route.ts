@@ -16,11 +16,11 @@ export async function GET(req: NextRequest) {
         const supabase = createServerClient();
 
         // Build count + data queries with shared filters
-        let countQuery = supabase
+        let countQuery = (supabase as any)
             .from('draw_results')
             .select('id', { count: 'exact', head: true });
 
-        let dataQuery = supabase
+        let dataQuery = (supabase as any)
             .from('draw_results')
             .select(`
                 *,
@@ -45,17 +45,17 @@ export async function GET(req: NextRequest) {
         }
 
         // Batch fetch winner stats for all draw results in ONE query (fixing N+1)
-        const drawIds = (data || []).map(d => d.id);
+        const drawIds = (data as any[] || []).map((d: any) => d.id);
         let statsMap: Record<string, { totalChecked: number; totalWinners: number; totalPrizeAmount: number }> = {};
 
         if (drawIds.length > 0) {
-            const { data: allLineResults } = await supabase
+            const { data: allLineResults } = await (supabase as any)
                 .from('order_line_results')
                 .select('draw_result_id, is_winner, prize_amount')
                 .in('draw_result_id', drawIds);
 
             // Aggregate in JS
-            for (const r of allLineResults || []) {
+            for (const r of (allLineResults || []) as any[]) {
                 if (!statsMap[r.draw_result_id]) {
                     statsMap[r.draw_result_id] = { totalChecked: 0, totalWinners: 0, totalPrizeAmount: 0 };
                 }
@@ -65,7 +65,7 @@ export async function GET(req: NextRequest) {
             }
         }
 
-        const resultsWithStats = (data || []).map(draw => ({
+        const resultsWithStats = (data as any[] || []).map((draw: any) => ({
             ...draw,
             ...(statsMap[draw.id] || { totalChecked: 0, totalWinners: 0, totalPrizeAmount: 0 }),
         }));
@@ -94,7 +94,7 @@ export async function POST(req: NextRequest) {
         const supabase = createServerClient();
 
         // Check if result already exists
-        const { data: existing } = await supabase
+        const { data: existing } = await (supabase as any)
             .from('draw_results')
             .select('id')
             .eq('lottery_type_id', lottery_type_id)
@@ -106,7 +106,7 @@ export async function POST(req: NextRequest) {
         }
 
         // Insert draw result
-        const { data: drawResult, error: insertError } = await supabase
+        const { data: drawResult, error: insertError } = await (supabase as any)
             .from('draw_results')
             .insert({
                 lottery_type_id,
@@ -321,7 +321,7 @@ export async function PUT(req: NextRequest) {
         const supabase = createServerClient();
 
         // Get the draw result
-        const { data: drawResult, error: fetchError } = await supabase
+        const { data: drawResult, error: fetchError } = await (supabase as any)
             .from('draw_results')
             .select('*, lottery_type:lottery_types(id, name)')
             .eq('id', draw_result_id)

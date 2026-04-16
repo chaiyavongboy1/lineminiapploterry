@@ -14,7 +14,7 @@ export async function GET(req: NextRequest) {
         }
 
         const supabase = createServerClient();
-        const { data, error } = await supabase
+        const { data, error } = await (supabase as any)
             .from('app_settings')
             .select('value')
             .eq('key', key)
@@ -55,7 +55,7 @@ export async function POST(req: NextRequest) {
 
         const supabase = createServerClient();
 
-        const { error } = await supabase
+        const { error } = await (supabase as any)
             .from('app_settings')
             .upsert(
                 { key, value, updated_at: new Date().toISOString() },

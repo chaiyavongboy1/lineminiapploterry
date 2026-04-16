@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
         const supabase = createServerClient();
 
         // Upsert user and return full row including role
-        const { data, error } = await supabase
+        const { data, error } = await (supabase as any)
             .from('users')
             .upsert(
                 {

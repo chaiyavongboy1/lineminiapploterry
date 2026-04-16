@@ -92,7 +92,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
             let userProfilesMap = new Map<string, any>();
 
             if (orderIds.length > 0) {
-                const { data: ordersData } = await supabase
+                const { data: ordersData } = await (supabase as any)
                     .from('orders')
                     .select(`
                         id,
@@ -102,7 +102,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
                     `)
                     .in('id', orderIds);
 
-                for (const o of ordersData || []) {
+                for (const o of (ordersData || []) as any[]) {
                     ordersMap.set(o.id, o);
                 }
 
@@ -117,12 +117,12 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
                 ));
 
                 if (userIds.length > 0) {
-                    const { data: profiles } = await supabase
+                    const { data: profiles } = await (supabase as any)
                         .from('user_profiles')
                         .select('user_id, bank_name, bank_account_number, promptpay_number')
                         .in('user_id', userIds);
 
-                    for (const p of profiles || []) {
+                    for (const p of (profiles || []) as any[]) {
                         userProfilesMap.set(p.user_id, p);
                     }
                 }
@@ -167,7 +167,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         const supabase = createServerClient();
         
         // Update draw result
-        const { data: drawResult, error: updateError } = await supabase
+        const { data: drawResult, error: updateError } = await (supabase as any)
             .from('draw_results')
             .update({ winning_numbers, special_number: special_number ?? null })
             .eq('id', id)

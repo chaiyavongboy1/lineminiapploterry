@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
         const supabase = createServerClient();
 
         // Find user by line_user_id
-        const { data: user } = await supabase
+        const { data: user } = await (supabase as any)
             .from('users')
             .select('id, display_name, picture_url')
             .eq('line_user_id', lineUserId)
@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
         }
 
         // Get profile
-        const { data: profile } = await supabase
+        const { data: profile } = await (supabase as any)
             .from('user_profiles')
             .select('*')
             .eq('user_id', user.id)
@@ -67,7 +67,7 @@ export async function POST(request: NextRequest) {
         const supabase = createServerClient();
 
         // Find user
-        const { data: user } = await supabase
+        const { data: user } = await (supabase as any)
             .from('users')
             .select('id')
             .eq('line_user_id', lineUserId)
@@ -81,7 +81,7 @@ export async function POST(request: NextRequest) {
         }
 
         // Upsert profile
-        const { data: profile, error } = await supabase
+        const { data: profile, error } = await (supabase as any)
             .from('user_profiles')
             .upsert({
                 user_id: user.id,

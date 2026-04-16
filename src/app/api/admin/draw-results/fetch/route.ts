@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
         const supabase = createServerClient();
 
         // Get lottery type info
-        const { data: lotteryType } = await supabase
+        const { data: lotteryType } = await (supabase as any)
             .from('lottery_types')
             .select('*')
             .eq('id', lottery_type_id)
@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
             }
 
             // Get existing draw dates for this lottery type
-            const { data: existingDraws } = await supabase
+            const { data: existingDraws } = await (supabase as any)
                 .from('draw_results')
                 .select('draw_date')
                 .eq('lottery_type_id', lottery_type_id);
@@ -123,7 +123,7 @@ export async function POST(req: NextRequest) {
         }
 
         // Get existing draw dates for this lottery type
-        const { data: existingDraws } = await supabase
+        const { data: existingDraws } = await (supabase as any)
             .from('draw_results')
             .select('draw_date')
             .eq('lottery_type_id', lottery_type_id);

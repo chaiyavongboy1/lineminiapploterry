@@ -38,7 +38,7 @@ export async function GET(req: NextRequest) {
         }
 
         // Find lottery type in DB
-        const { data: lotteryType } = await supabase
+        const { data: lotteryType } = await (supabase as any)
             .from('lottery_types')
             .select('id, name')
             .eq('name', lotteryName)
@@ -69,7 +69,7 @@ export async function GET(req: NextRequest) {
         }
 
         // Insert new draw result
-        const { data: drawResult, error: insertError } = await supabase
+        const { data: drawResult, error: insertError } = await (supabase as any)
             .from('draw_results')
             .insert({
                 lottery_type_id: lotteryType.id,

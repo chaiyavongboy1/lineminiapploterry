@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
         const supabase = createServerClient();
 
         // Get user
-        const { data: user } = await supabase
+        const { data: user } = await (supabase as any)
             .from('users')
             .select('id')
             .eq('line_user_id', lineUserId)
@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
         }
 
         // Get lottery type for pricing
-        const { data: lotteryType } = await supabase
+        const { data: lotteryType } = await (supabase as any)
             .from('lottery_types')
             .select('*')
             .eq('id', lotteryTypeId)
@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
         // Duplicate order prevention:
         // Check if user has a recent order (within 2 minutes) for the same lottery type
         const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000).toISOString();
-        const { data: recentOrder } = await supabase
+        const { data: recentOrder } = await (supabase as any)
             .from('orders')
             .select('id, order_number, created_at')
             .eq('user_id', user.id)
@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
         if (recentOrder) {
             // Return the existing order instead of creating a duplicate
             console.warn(`Duplicate order prevented for user ${user.id}, returning existing order ${recentOrder.order_number}`);
-            const { data: existingOrder } = await supabase
+            const { data: existingOrder } = await (supabase as any)
                 .from('orders')
                 .select('*')
                 .eq('id', recentOrder.id)
@@ -87,7 +87,7 @@ export async function POST(request: NextRequest) {
         }
 
         // Create order
-        const { data: order, error: orderError } = await supabase
+        const { data: order, error: orderError } = await (supabase as any)
             .from('orders')
             .insert({
                 order_number: orderNumber,
@@ -120,7 +120,7 @@ export async function POST(request: NextRequest) {
             is_quick_pick: line.isQuickPick || false,
         }));
 
-        const { error: linesError } = await supabase
+        const { error: linesError } = await (supabase as any)
             .from('order_lines')
             .insert(orderLines);
 
@@ -167,7 +167,7 @@ export async function GET(request: NextRequest) {
         const supabase = createServerClient();
 
         // Get user
-        const { data: user } = await supabase
+        const { data: user } = await (supabase as any)
             .from('users')
             .select('id')
             .eq('line_user_id', lineUserId)
@@ -181,12 +181,12 @@ export async function GET(request: NextRequest) {
         }
 
         // Build both queries with shared filters
-        let countQuery = supabase
+        let countQuery = (supabase as any)
             .from('orders')
             .select('id', { count: 'exact', head: true })
             .eq('user_id', user.id);
 
-        let dataQuery = supabase
+        let dataQuery = (supabase as any)
             .from('orders')
             .select(`
                 *,

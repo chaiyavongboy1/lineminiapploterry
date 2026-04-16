@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
         const supabase = createServerClient();
 
         // Get user ID based on line_user_id
-        const { data: user } = await supabase
+        const { data: user } = await (supabase as any)
             .from('users')
             .select('id')
             .eq('line_user_id', lineUserId)
@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
         }
 
         // Get winning order line results for this user
-        const { data: orderLineResults, error } = await supabase
+        const { data: orderLineResults, error } = await (supabase as any)
             .from('order_line_results')
             .select(`
                 *,
@@ -74,13 +74,13 @@ export async function GET(request: NextRequest) {
         let prizeTransferSlips: any[] = [];
 
         if (orderIds.length > 0) {
-            const { data: fetchImages } = await supabase
+            const { data: fetchImages } = await (supabase as any)
                 .from('ticket_images')
                 .select('*')
                 .in('order_id', orderIds);
             if (fetchImages) ticketImages = fetchImages;
 
-            const { data: fetchSlips } = await supabase
+            const { data: fetchSlips } = await (supabase as any)
                 .from('prize_transfer_slips')
                 .select('*')
                 .in('order_id', orderIds);
@@ -88,7 +88,7 @@ export async function GET(request: NextRequest) {
         }
 
         // Fetch app settings (tax rate, exchange rate)
-        const { data: settings } = await supabase
+        const { data: settings } = await (supabase as any)
             .from('app_settings')
             .select('key, value')
             .in('key', ['tax_rate', 'exchange_rate']);

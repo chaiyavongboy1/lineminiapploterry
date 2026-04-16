@@ -14,7 +14,7 @@ export async function GET(req: NextRequest) {
         const supabase = createServerClient();
 
         // Find user
-        const { data: user } = await supabase
+        const { data: user } = await (supabase as any)
             .from('users')
             .select('id')
             .eq('line_user_id', lineUserId)
@@ -25,7 +25,7 @@ export async function GET(req: NextRequest) {
         }
 
         // Get user's orders with draw results — single query, no N+1
-        const { data: orders } = await supabase
+        const { data: orders } = await (supabase as any)
             .from('orders')
             .select(`
                 id,
@@ -70,7 +70,7 @@ export async function GET(req: NextRequest) {
         const [lineResultsRes, drawResultsRes] = await Promise.all([
             // All order_line_results at once instead of per-order
             allLineIds.length > 0
-                ? supabase
+                ? (supabase as any)
                     .from('order_line_results')
                     .select(`
                         *,
@@ -81,7 +81,7 @@ export async function GET(req: NextRequest) {
                 : Promise.resolve({ data: [] }),
 
             // All draw results at once — fetch all for relevant lottery types
-            supabase
+            (supabase as any)
                 .from('draw_results')
                 .select('id, draw_date, winning_numbers, special_number, lottery_type_id'),
         ]);
@@ -104,7 +104,7 @@ export async function GET(req: NextRequest) {
         }
 
         // Build response — no additional DB queries
-        const ordersWithResults = orders.map((order) => {
+        const ordersWithResults = (orders as any[]).map((order: any) => {
             const lines = order.order_lines as { id: string }[] | null;
             const lineIds = lines?.map(l => l.id) || [];
 
