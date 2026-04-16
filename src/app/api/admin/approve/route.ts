@@ -24,9 +24,9 @@ export async function POST(request: NextRequest) {
             .from('users')
             .select('id, role')
             .eq('line_user_id', adminLineUserId)
-            .single();
+            .single() as { data: { id: string; role: string } | null };
 
-        if (!admin || admin.role !== 'admin') {
+        if (!admin || (admin.role !== 'admin' && admin.role !== 'super_admin')) {
             return NextResponse.json<ApiResponse>(
                 { success: false, error: 'Forbidden — admin only' },
                 { status: 403 }
@@ -36,8 +36,8 @@ export async function POST(request: NextRequest) {
         const newStatus = action === 'approve' ? 'approved' : 'rejected';
 
         // Update order
-        const { data: order, error } = await supabase
-            .from('orders')
+        const { data: order, error } = await (supabase
+            .from('orders') as any)
             .update({
                 status: newStatus,
                 admin_note: adminNote || null,
@@ -59,8 +59,8 @@ export async function POST(request: NextRequest) {
 
         // Mark payment slip as verified if approved
         if (action === 'approve') {
-            await supabase
-                .from('payment_slips')
+            await (supabase
+                .from('payment_slips') as any)
                 .update({
                     verified: true,
                     verified_by: admin.id,
@@ -71,11 +71,11 @@ export async function POST(request: NextRequest) {
 
         // Notify user via LINE
         try {
-            const userLineId = (order.user as unknown as { line_user_id: string })?.line_user_id;
+            const userLineId = ((order as any).user as { line_user_id: string })?.line_user_id;
             if (userLineId) {
                 await notifyUserOrderStatus(
                     userLineId,
-                    order.order_number,
+                    (order as any).order_number,
                     newStatus as 'approved' | 'rejected',
                     adminNote
                 );
