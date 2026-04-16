@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
             .from('users')
             .select('id, role')
             .eq('line_user_id', lineUserId)
-            .single();
+            .single() as { data: { id: string; role: string } | null };
 
         if (!admin || (admin.role !== 'admin' && admin.role !== 'super_admin')) {
             return NextResponse.json<ApiResponse>(
@@ -83,12 +83,12 @@ export async function GET(request: NextRequest) {
                 .range(0, 4),
         ]);
 
-        const totalRevenue = (revenueResult.data || []).reduce(
-            (sum, o) => sum + Number(o.total_amount || 0), 0
+        const totalRevenue = ((revenueResult.data || []) as any[]).reduce(
+            (sum: number, o: any) => sum + Number(o.total_amount || 0), 0
         );
 
         const pendingByLotteryType: Record<string, number> = {};
-        for (const order of pendingByTypeResult.data || []) {
+        for (const order of (pendingByTypeResult.data || []) as any[]) {
             const id = order.lottery_type_id;
             pendingByLotteryType[id] = (pendingByLotteryType[id] || 0) + 1;
         }

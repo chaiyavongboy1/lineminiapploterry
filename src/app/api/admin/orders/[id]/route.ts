@@ -26,9 +26,9 @@ export async function GET(
             .from('users')
             .select('id, role')
             .eq('line_user_id', lineUserId)
-            .single();
+            .single() as { data: { id: string; role: string } | null };
 
-        if (!admin || admin.role !== 'admin') {
+        if (!admin || (admin.role !== 'admin' && admin.role !== 'super_admin')) {
             return NextResponse.json<ApiResponse>(
                 { success: false, error: 'Forbidden — admin only' },
                 { status: 403 }

@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
             .from('users')
             .select('id, role')
             .eq('line_user_id', adminLineUserId)
-            .single();
+            .single() as { data: { id: string; role: string } | null };
 
         if (!admin || (admin.role !== 'admin' && admin.role !== 'super_admin')) {
             return NextResponse.json<ApiResponse>(
@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
             uploadedUrls.push(urlData.publicUrl);
 
             // Insert into ticket_images table
-            await supabase.from('ticket_images').insert({
+            await (supabase.from('ticket_images') as any).insert({
                 order_id: orderId,
                 image_url: urlData.publicUrl,
                 uploaded_by: admin.id,
@@ -86,8 +86,8 @@ export async function POST(request: NextRequest) {
         }
 
         // Update order status to completed + store first ticket image URL (backward compat)
-        const { data: order, error: updateError } = await supabase
-            .from('orders')
+        const { data: order, error: updateError } = await (supabase
+            .from('orders') as any)
             .update({
                 status: 'completed',
                 admin_note: adminNote || null,
@@ -110,10 +110,10 @@ export async function POST(request: NextRequest) {
         }
 
         // Send LINE notification to user
-        if (order?.user) {
-            const user = order.user as unknown as { line_user_id: string };
+        if ((order as any)?.user) {
+            const user = (order as any).user as unknown as { line_user_id: string };
             try {
-                await notifyUserTicketSent(user.line_user_id, order.order_number);
+                await notifyUserTicketSent(user.line_user_id, (order as any).order_number);
             } catch (err) {
                 console.error('Failed to send LINE notification:', err);
             }
@@ -121,7 +121,7 @@ export async function POST(request: NextRequest) {
 
         return NextResponse.json<ApiResponse>({
             success: true,
-            data: { uploadedUrls, orderNumber: order?.order_number },
+            data: { uploadedUrls, orderNumber: (order as any)?.order_number },
         });
     } catch (err) {
         console.error('Complete order error:', err);

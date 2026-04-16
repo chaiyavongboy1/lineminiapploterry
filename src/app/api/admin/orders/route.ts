@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
             .from('users')
             .select('id, role')
             .eq('line_user_id', lineUserId)
-            .single();
+            .single() as { data: { id: string; role: string } | null };
 
         if (!admin || (admin.role !== 'admin' && admin.role !== 'super_admin')) {
             return NextResponse.json<ApiResponse>(
