@@ -22,15 +22,8 @@ interface ResultItem {
     order_number: string;
 }
 
-// Determine if a prize tier is taxable based on lottery type and tier
-// Powerball: Tier 1 (Jackpot), Tier 2 (5 Match), Tier 3 (4+PB) → taxable
-// Mega Millions: Tier 1 (Jackpot), Tier 2 (5 Match) → taxable
-function isTaxablePrize(lotteryName: string, tierOrder: number | undefined): boolean {
-    if (!tierOrder) return false;
-    if (lotteryName === 'Powerball') return tierOrder <= 3;
-    if (lotteryName === 'Mega Millions') return tierOrder <= 2;
-    return false;
-}
+// Tax threshold: prizes of $600 or more total per order are taxable
+const TAX_THRESHOLD = 600;
 
 export default function MyResultsPage() {
     const { profile, isLoggedIn, isReady } = useLine();
@@ -169,14 +162,9 @@ export default function MyResultsPage() {
                             (sum, r) => sum + (r.prize_amount || 0), 0
                         );
                         const lotteryName = result.draw_result.lottery_type?.name || '';
-                        // Check if any line result in this group is taxable
-                        const taxableLines = result.order_line_results.filter(r => {
-                            const tierOrder = (r.prize_tier as any)?.tier_order;
-                            return isTaxablePrize(lotteryName, tierOrder);
-                        });
-                        const hasTaxableWin = taxableLines.length > 0;
-                        const taxablePrizeTotal = taxableLines.reduce((sum, r) => sum + (r.prize_amount || 0), 0);
-                        const nonTaxablePrizeTotal = totalPrize - taxablePrizeTotal;
+                        // Tax applies when total prize in this order is $600 or more
+                        const hasTaxableWin = totalPrize >= TAX_THRESHOLD;
+                        const taxablePrizeTotal = hasTaxableWin ? totalPrize : 0;
 
                         return (
                             <div
@@ -371,8 +359,8 @@ export default function MyResultsPage() {
                                                             fontSize: 12,
                                                             marginBottom: 4,
                                                         }}>
-                                                            <span style={{ color: 'var(--text-muted)' }}>ส่วนที่เสียภาษี</span>
-                                                            <span style={{ fontWeight: 600 }}>${taxablePrizeTotal.toLocaleString()}</span>
+                                                            <span style={{ color: 'var(--text-muted)' }}>ยอดรางวัลรวม (เกิน ${TAX_THRESHOLD.toLocaleString()})</span>
+                                                            <span style={{ fontWeight: 600 }}>${totalPrize.toLocaleString()}</span>
                                                         </div>
                                                         <div style={{
                                                             display: 'flex',
@@ -382,14 +370,14 @@ export default function MyResultsPage() {
                                                         }}>
                                                             <span style={{ color: 'var(--text-muted)' }}>ภาษี ({taxRate}%)</span>
                                                             <span style={{ fontWeight: 600, color: 'var(--danger)' }}>
-                                                                -${(taxablePrizeTotal * taxRate / 100).toLocaleString()}
+                                                                -${(totalPrize * taxRate / 100).toLocaleString()}
                                                             </span>
                                                         </div>
                                                     </>
                                                 )}
 
                                                 {exchangeRate > 0 && (() => {
-                                                    const taxDeduct = hasTaxableWin && taxRate > 0 ? (taxablePrizeTotal * taxRate / 100) : 0;
+                                                    const taxDeduct = hasTaxableWin && taxRate > 0 ? (totalPrize * taxRate / 100) : 0;
                                                     const netTotal = totalPrize - taxDeduct;
                                                     const thbAmount = netTotal * exchangeRate;
                                                     return (
@@ -425,7 +413,7 @@ export default function MyResultsPage() {
                                                         marginTop: 8,
                                                         lineHeight: 1.4,
                                                     }}>
-                                                        ⚠️ ภาษีหักเฉพาะรางวัลขั้นสูง ตามกฎของ {lotteryName} จำนวนเงินที่แสดงเป็นการประมาณการเท่านั้น
+                                                        ⚠️ ภาษีจะถูกหักเมื่อยอดรวมรางวัลในออร์เดอร์เกิน ${TAX_THRESHOLD.toLocaleString()} จำนวนเงินที่แสดงเป็นการประมาณการเท่านั้น
                                                     </p>
                                                 )}
                                             </div>

@@ -178,15 +178,8 @@ export default function DrawResultDetailPage() {
 
     const hasTaxInfo = taxSettings.taxRate || taxSettings.exchangeRate;
 
-    // Determine if a prize tier is taxable based on lottery type and tier
-    // Powerball: Tier 1 (Jackpot), Tier 2 (5 Match), Tier 3 (4+PB) → taxable
-    // Mega Millions: Tier 1 (Jackpot), Tier 2 (5 Match) → taxable
-    function isTaxableTier(tierOrder: number | undefined): boolean {
-        if (!tierOrder) return false;
-        if (lotteryName === 'Powerball') return tierOrder <= 3;
-        if (lotteryName === 'Mega Millions') return tierOrder <= 2;
-        return false;
-    }
+    // Tax threshold: prizes of $600 or more total per order are taxable
+    const TAX_THRESHOLD = 600;
 
     return (
         <div>
@@ -277,13 +270,12 @@ export default function DrawResultDetailPage() {
                 const exR = parseFloat(taxSettings.exchangeRate) || 0;
                 const totalPrizeUSD = winners.reduce((sum, w) => sum + (w.prize_amount || 0), 0);
 
-                // Only tax tiers that qualify
-                const taxableWinners = winners.filter(w => isTaxableTier(w.prize_tier?.tier_order));
-                const taxablePrizeUSD = taxableWinners.reduce((sum, w) => sum + (w.prize_amount || 0), 0);
-                const totalTaxUSD = taxR > 0 ? taxablePrizeUSD * (taxR / 100) : 0;
+                // Tax applies when total prize is $600 or more
+                const hasTaxableWinners = totalPrizeUSD >= TAX_THRESHOLD;
+                const taxablePrizeUSD = hasTaxableWinners ? totalPrizeUSD : 0;
+                const totalTaxUSD = hasTaxableWinners && taxR > 0 ? totalPrizeUSD * (taxR / 100) : 0;
                 const totalNetUSD = totalPrizeUSD - totalTaxUSD;
                 const totalTransferTHB = exR > 0 ? totalNetUSD * exR : 0;
-                const hasTaxableWinners = taxableWinners.length > 0;
 
                 return (
                     <div style={{
@@ -305,8 +297,8 @@ export default function DrawResultDetailPage() {
                             {hasTaxableWinners && taxR > 0 && (
                                 <>
                                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--text-muted)' }}>
-                                        <span>ส่วนที่เสียภาษี ({taxableWinners.length} รายการ)</span>
-                                        <strong style={{ color: 'var(--text)' }}>${taxablePrizeUSD.toLocaleString(undefined, { minimumFractionDigits: 2 })}</strong>
+                                        <span>ยอดรวมเกิน ${TAX_THRESHOLD.toLocaleString()}</span>
+                                        <strong style={{ color: 'var(--text)' }}>${totalPrizeUSD.toLocaleString(undefined, { minimumFractionDigits: 2 })}</strong>
                                     </div>
                                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--text-muted)' }}>
                                         <span>หักภาษี {taxSettings.taxRate}%</span>
@@ -335,7 +327,7 @@ export default function DrawResultDetailPage() {
                             )}
                             {hasTaxableWinners && (
                                 <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 4 }}>
-                                    ⚠️ ภาษีหักเฉพาะรางวัลขั้นสูง: {lotteryName === 'Powerball' ? 'Tier 1-3 (Jackpot, 5 Match, 4+PB)' : 'Tier 1-2 (Jackpot, 5 Match)'}
+                                    ⚠️ ภาษีจะถูกหักเมื่อยอดรวมรางวัลเกิน ${TAX_THRESHOLD.toLocaleString()}
                                 </div>
                             )}
                         </div>
@@ -362,7 +354,7 @@ export default function DrawResultDetailPage() {
                         <div style={{ fontSize: 12, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 6 }}>
                             <Percent size={12} />
                             ภาษี: <strong style={{ color: 'var(--text)' }}>{taxSettings.taxRate}%</strong>
-                            <span style={{ fontSize: 11 }}>(เฉพาะ {lotteryName === 'Powerball' ? 'Tier 1-3' : 'Tier 1-2'})</span>
+                            <span style={{ fontSize: 11 }}>(เมื่อยอดรวมเกิน ${TAX_THRESHOLD.toLocaleString()})</span>
                         </div>
                     )}
                     {taxSettings.exchangeRate && (
@@ -385,7 +377,8 @@ export default function DrawResultDetailPage() {
                             const prizeAmount = w.prize_amount || 0;
                             const taxRate = parseFloat(taxSettings.taxRate) || 0;
                             const exchangeRate = parseFloat(taxSettings.exchangeRate) || 0;
-                            const isTaxable = isTaxableTier(w.prize_tier?.tier_order);
+                            // Tax applies per winner when their prize is at or above threshold
+                            const isTaxable = prizeAmount >= TAX_THRESHOLD;
                             const taxAmount = isTaxable && taxRate > 0 ? (prizeAmount * taxRate / 100) : 0;
                             const netPayout = prizeAmount - taxAmount;
                             const transferTHB = exchangeRate > 0 ? (netPayout * exchangeRate) : 0;
