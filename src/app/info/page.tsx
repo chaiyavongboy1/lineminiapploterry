@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { getContentSections, type ContentSection } from '@/lib/content-data';
+import type { ContentSection } from '@/lib/content-data';
 import { ChevronDown, ArrowLeft, BookOpen } from 'lucide-react';
 import Link from 'next/link';
 
@@ -11,9 +11,21 @@ export default function InfoPage() {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const all = getContentSections();
-        setSections(all.filter(s => s.is_visible).sort((a, b) => a.sort_order - b.sort_order));
-        setLoading(false);
+        fetch('/api/settings?key=site_content_pages')
+            .then(r => r.json())
+            .then(json => {
+                let all: ContentSection[] = [];
+                if (json.success && json.data) {
+                    try { all = JSON.parse(json.data); } catch { all = []; }
+                }
+                setSections(
+                    all
+                        .filter((s: ContentSection) => s.is_visible)
+                        .sort((a: ContentSection, b: ContentSection) => a.sort_order - b.sort_order)
+                );
+            })
+            .catch(() => setSections([]))
+            .finally(() => setLoading(false));
     }, []);
 
     const toggleExpand = (id: string) => {

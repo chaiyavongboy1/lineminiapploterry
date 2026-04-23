@@ -8,7 +8,7 @@ import { Zap, Calendar, DollarSign, ChevronRight, Ticket, Star, ChevronDown, Boo
 import LotteryLogo from '@/components/LotteryLogo';
 import Modal from '@/components/Modal';
 import type { LotteryType } from '@/types';
-import { getContentSections, type ContentSection } from '@/lib/content-data';
+import type { ContentSection } from '@/lib/content-data';
 import Link from 'next/link';
 
 function getNextDrawDate(drawDays: string[]): string {
@@ -57,8 +57,21 @@ function ContentSectionsPreview() {
     const [expandedId, setExpandedId] = useState<string | null>(null);
 
     useEffect(() => {
-        const all = getContentSections();
-        setSections(all.filter(s => s.is_visible).sort((a, b) => a.sort_order - b.sort_order).slice(0, 4));
+        fetch('/api/settings?key=site_content_pages')
+            .then(r => r.json())
+            .then(json => {
+                let all: ContentSection[] = [];
+                if (json.success && json.data) {
+                    try { all = JSON.parse(json.data); } catch { all = []; }
+                }
+                setSections(
+                    all
+                        .filter((s: ContentSection) => s.is_visible)
+                        .sort((a: ContentSection, b: ContentSection) => a.sort_order - b.sort_order)
+                        .slice(0, 4)
+                );
+            })
+            .catch(() => setSections([]));
     }, []);
 
     if (sections.length === 0) return null;
@@ -237,10 +250,10 @@ export default function HomePage() {
                                 WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
                                 letterSpacing: '-0.02em', lineHeight: 1.15,
                             }}>
-                                America Lottery
+                                Lottery USA
                             </h1>
                             <p style={{ fontSize: 13, color: 'var(--blue-600)', fontWeight: 600, marginTop: 3, display: 'flex', alignItems: 'center', gap: 5 }}>
-                                บริการรับฝากซื้อ USA Lottery ผ่าน LINE
+                                บริการรับฝากซื้อ Lottery ที่ USA ผ่าน LINE
                             </p>
                         </div>
                     </div>
@@ -406,7 +419,7 @@ export default function HomePage() {
                                 <img src="/step-ticket.png" alt="เลือก Lottery" style={{ width: 40, height: 40, objectFit: 'contain' }} />
                             </div>
                             <div style={{ fontSize: 10, fontWeight: 800, color: '#3085f0', letterSpacing: '0.14em', marginBottom: 3 }}>STEP 01</div>
-                            <div style={{ fontSize: 15, fontWeight: 800, color: '#1a2740' }}>เลือก Lottery</div>
+                            <div style={{ fontSize: 15, fontWeight: 800, color: '#1a2740' }}>เลือกประเภท</div>
                         </div>
 
                         {/* Arrow → */}

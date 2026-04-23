@@ -1,8 +1,30 @@
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
-import { getContentSections, saveContentSections, DEFAULT_CONTENT, type ContentSection } from '@/lib/content-data';
+import { DEFAULT_CONTENT, type ContentSection } from '@/lib/content-data';
 import { Save, X, Edit2, Eye, EyeOff, RotateCcw, ChevronDown, ChevronUp, ImagePlus, Link2, Upload } from 'lucide-react';
+
+const CONTENT_KEY = 'site_content_pages';
+
+async function fetchContent(): Promise<ContentSection[]> {
+    try {
+        const res = await fetch(`/api/settings?key=${CONTENT_KEY}`);
+        const json = await res.json();
+        if (json.success && json.data) {
+            return JSON.parse(json.data) as ContentSection[];
+        }
+    } catch { /* ignore */ }
+    return [...DEFAULT_CONTENT];
+}
+
+async function saveContent(sections: ContentSection[]): Promise<void> {
+    await fetch('/api/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key: CONTENT_KEY, value: JSON.stringify(sections) }),
+    });
+}
+
 
 // Render content with image support: [IMG:url] → <img>
 function ContentPreview({ content, muted }: { content: string; muted?: boolean }) {
@@ -59,28 +81,29 @@ export default function AdminContentPage() {
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
-        const data = getContentSections();
-        setSections(data.sort((a, b) => a.sort_order - b.sort_order));
-        setLoading(false);
+        fetchContent().then(data => {
+            setSections(data.sort((a, b) => a.sort_order - b.sort_order));
+            setLoading(false);
+        });
     }, []);
 
-    const handleSave = () => {
+    const handleSave = async () => {
         const updated = sections.map(s =>
             s.id === editingId ? { ...s, content: editContent, title: editTitle, subtitle: editSubtitle, icon: editIcon } : s
         );
         setSections(updated);
-        saveContentSections(updated);
+        await saveContent(updated);
         setEditingId(null);
         setSaved(true);
         setTimeout(() => setSaved(false), 2000);
     };
 
-    const toggleVisibility = (id: string) => {
+    const toggleVisibility = async (id: string) => {
         const updated = sections.map(s =>
             s.id === id ? { ...s, is_visible: !s.is_visible } : s
         );
         setSections(updated);
-        saveContentSections(updated);
+        await saveContent(updated);
         setSaved(true);
         setTimeout(() => setSaved(false), 2000);
     };
@@ -93,29 +116,29 @@ export default function AdminContentPage() {
         setEditIcon(section.icon);
     };
 
-    const handleReset = () => {
+    const handleReset = async () => {
         if (confirm('รีเซ็ตเนื้อหาทั้งหมดเป็นค่าเริ่มต้น?')) {
-            saveContentSections(DEFAULT_CONTENT);
+            await saveContent([...DEFAULT_CONTENT]);
             setSections([...DEFAULT_CONTENT]);
             setSaved(true);
             setTimeout(() => setSaved(false), 2000);
         }
     };
 
-    const moveSection = (id: string, direction: 'up' | 'down') => {
+    const moveSection = async (id: string, direction: 'up' | 'down') => {
         const idx = sections.findIndex(s => s.id === id);
         if (direction === 'up' && idx > 0) {
             const newSections = [...sections];
             [newSections[idx - 1], newSections[idx]] = [newSections[idx], newSections[idx - 1]];
             newSections.forEach((s, i) => s.sort_order = i + 1);
             setSections(newSections);
-            saveContentSections(newSections);
+            await saveContent(newSections);
         } else if (direction === 'down' && idx < sections.length - 1) {
             const newSections = [...sections];
             [newSections[idx], newSections[idx + 1]] = [newSections[idx + 1], newSections[idx]];
             newSections.forEach((s, i) => s.sort_order = i + 1);
             setSections(newSections);
-            saveContentSections(newSections);
+            await saveContent(newSections);
         }
     };
 
