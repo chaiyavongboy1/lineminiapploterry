@@ -9,6 +9,7 @@ import { ArrowLeft, Shuffle, Trash2, ShoppingCart, Dices, AlertCircle, User } fr
 import type { LotteryType, NumberSelection } from '@/types';
 import Link from 'next/link';
 import Modal from '@/components/Modal';
+import LoadingScreen from '@/components/LoadingScreen';
 import styles from './lottery.module.css';
 
 const LINE_OPTIONS = [1, 2, 3, 5, 7, 10, 15];
@@ -250,9 +251,7 @@ export default function LotteryPage() {
 
     if (loading) {
         return (
-            <div style={{ padding: '60px 0', textAlign: 'center' }}>
-                <div className="loading-spinner" />
-            </div>
+            <LoadingScreen title="เลือกเลข" subtitle="กำลังโหลดข้อมูล Lottery..." />
         );
     }
 

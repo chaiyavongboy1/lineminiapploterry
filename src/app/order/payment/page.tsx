@@ -9,6 +9,7 @@ import { ArrowLeft, Copy, Check, Upload, X } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
 import type { Order } from '@/types';
 import Link from 'next/link';
+import LoadingScreen from '@/components/LoadingScreen';
 
 function PaymentContent() {
     const searchParams = useSearchParams();
@@ -79,9 +80,7 @@ function PaymentContent() {
 
     if (loading) {
         return (
-            <div style={{ padding: '60px 0', textAlign: 'center' }}>
-                <div className="loading-spinner" />
-            </div>
+            <LoadingScreen title="ชำระเงิน" subtitle="กำลังโหลดข้อมูล..." />
         );
     }
 
@@ -316,7 +315,7 @@ function PaymentContent() {
 
 export default function PaymentPage() {
     return (
-        <Suspense fallback={<div style={{ padding: '60px 0', textAlign: 'center' }}><div className="loading-spinner" /></div>}>
+        <Suspense fallback={<LoadingScreen title="ชำระเงิน" subtitle="กำลังโหลด..." />}>
             <PaymentContent />
         </Suspense>
     );

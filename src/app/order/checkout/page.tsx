@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { formatCurrency, formatDrawDate } from '@/lib/utils';
 import { useImageUpload } from '@/hooks/useImageUpload';
+import LoadingScreen from '@/components/LoadingScreen';
 
 interface CheckoutLine {
     lineNumber: number;
@@ -180,9 +181,7 @@ function CheckoutContent() {
     // Show loading while data/settings are not yet loaded
     if (!data || !settings) {
         return (
-            <div style={{ padding: '60px 0', textAlign: 'center' }}>
-                <div className="loading-spinner" />
-            </div>
+            <LoadingScreen title="ชำระเงิน" subtitle="กำลังโหลดข้อมูล..." />
         );
     }
 
@@ -627,7 +626,7 @@ function CheckoutContent() {
 
 export default function CheckoutPage() {
     return (
-        <Suspense fallback={<div style={{ padding: '60px 0', textAlign: 'center' }}><div className="loading-spinner" /></div>}>
+        <Suspense fallback={<LoadingScreen title="ชำระเงิน" subtitle="กำลังโหลด..." />}>
             <CheckoutContent />
         </Suspense>
     );

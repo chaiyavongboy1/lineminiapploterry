@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { Zap, Calendar, DollarSign, ChevronRight, Ticket, Star, ChevronDown, BookOpen, Sparkles, Gift, Shield, TrendingUp, Clock } from 'lucide-react';
 import LotteryLogo from '@/components/LotteryLogo';
 import Modal from '@/components/Modal';
+import LoadingScreen from '@/components/LoadingScreen';
 import type { LotteryType } from '@/types';
 import type { ContentSection } from '@/lib/content-data';
 import Link from 'next/link';
@@ -185,9 +186,7 @@ export default function HomePage() {
     const handleProceed = () => { if (!selectedLottery) return; setShowModal(false); router.push(`/lottery/${selectedLottery.id}`); };
 
     if (!isReady) return (
-        <div style={{ padding: '80px 0', textAlign: 'center' }}>
-            <div className="loading-spinner" />
-        </div>
+        <LoadingScreen title="Lottery USA" subtitle="กำลังเตรียมข้อมูล..." />
     );
 
     /* Lottery card configs - pastel themed */

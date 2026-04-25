@@ -6,6 +6,7 @@ import { useState } from 'react';
 import { ArrowLeft, Upload, Camera, CheckCircle, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { useImageUpload } from '@/hooks/useImageUpload';
+import LoadingScreen from '@/components/LoadingScreen';
 
 function UploadSlipContent() {
     const searchParams = useSearchParams();
@@ -213,7 +214,7 @@ function UploadSlipContent() {
 
 export default function UploadSlipPage() {
     return (
-        <Suspense fallback={<div style={{ padding: '60px 0', textAlign: 'center' }}><div className="loading-spinner" /></div>}>
+        <Suspense fallback={<LoadingScreen title="แนบสลิป" subtitle="กำลังโหลด..." />}>
             <UploadSlipContent />
         </Suspense>
     );

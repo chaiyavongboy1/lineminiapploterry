@@ -4,11 +4,26 @@ import { useEffect, useState } from 'react';
 import type { ContentSection } from '@/lib/content-data';
 import { ChevronDown, ArrowLeft, BookOpen } from 'lucide-react';
 import Link from 'next/link';
+import LoadingScreen from '@/components/LoadingScreen';
 
 export default function InfoPage() {
-    const [sections, setSections] = useState<ContentSection[]>([]);
+    const [sections, setSections] = useState<ContentSection[]>(() => {
+        // Try cached data first for instant display
+        if (typeof window !== 'undefined') {
+            try {
+                const cached = sessionStorage.getItem('info_content_cache');
+                if (cached) {
+                    const all: ContentSection[] = JSON.parse(cached);
+                    return all
+                        .filter((s: ContentSection) => s.is_visible)
+                        .sort((a: ContentSection, b: ContentSection) => a.sort_order - b.sort_order);
+                }
+            } catch { /* ignore */ }
+        }
+        return [];
+    });
     const [expandedId, setExpandedId] = useState<string | null>(null);
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(sections.length === 0);
 
     useEffect(() => {
         fetch('/api/settings?key=site_content_pages')
@@ -17,6 +32,8 @@ export default function InfoPage() {
                 let all: ContentSection[] = [];
                 if (json.success && json.data) {
                     try { all = JSON.parse(json.data); } catch { all = []; }
+                    // Cache for instant subsequent loads
+                    try { sessionStorage.setItem('info_content_cache', json.data); } catch { /* ignore */ }
                 }
                 setSections(
                     all
@@ -34,9 +51,7 @@ export default function InfoPage() {
 
     if (loading) {
         return (
-            <div style={{ padding: '40px 0', textAlign: 'center' }}>
-                <div className="loading-spinner" />
-            </div>
+            <LoadingScreen title="ข้อมูลสำคัญ" subtitle="กำลังโหลดข้อมูล..." />
         );
     }
 
@@ -75,7 +90,7 @@ export default function InfoPage() {
                             </h1>
                         </div>
                         <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.75)', marginTop: 4 }}>
-                            ทุกสิ่งที่คุณต้องรู้เกี่ยวกับ America Lottery
+                            ทุกสิ่งที่คุณต้องรู้เกี่ยวกับ Lottery USA
                         </p>
                     </div>
                 </div>

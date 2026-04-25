@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useLine } from '@/components/LineProvider';
 import { ArrowLeft, Save, CheckCircle, Building2, CreditCard, Smartphone, User } from 'lucide-react';
 import Link from 'next/link';
+import LoadingScreen from '@/components/LoadingScreen';
 import type { UserProfile } from '@/types';
 
 const BANK_OPTIONS = [
@@ -99,10 +100,7 @@ export default function ProfilePage() {
 
     if (!isReady || loading) {
         return (
-            <div style={{ padding: '60px 0', textAlign: 'center' }}>
-                <div className="loading-spinner" />
-                <p style={{ color: 'var(--text-muted)', marginTop: 16, fontSize: 14 }}>กำลังโหลด...</p>
-            </div>
+            <LoadingScreen title="โปรไฟล์" subtitle="กำลังโหลดข้อมูล..." />
         );
     }
 

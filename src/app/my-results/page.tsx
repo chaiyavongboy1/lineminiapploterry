@@ -8,6 +8,7 @@ import { Trophy, Calendar, DollarSign, ArrowLeft, FileText, ChevronDown, Chevron
 import Pagination, { paginateItems } from '@/components/Pagination';
 import LotteryLogo from '@/components/LotteryLogo';
 import Modal from '@/components/Modal';
+import LoadingScreen from '@/components/LoadingScreen';
 import Link from 'next/link';
 import type { DrawResult, OrderLineResult, TicketImage, PrizeTransferSlip } from '@/types';
 
@@ -107,10 +108,7 @@ export default function MyResultsPage() {
 
     if (!isReady || loading) {
         return (
-            <div style={{ padding: '60px 0', textAlign: 'center' }}>
-                <div className="loading-spinner" />
-                <p style={{ color: 'var(--text-muted)', marginTop: 16, fontSize: 14 }}>กำลังโหลด...</p>
-            </div>
+            <LoadingScreen title="ผลรางวัล" subtitle="กำลังโหลดข้อมูล..." />
         );
     }
 

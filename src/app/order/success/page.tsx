@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { CheckCircle, Ticket, History, Loader2 } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
 import { useLine } from '@/components/LineProvider';
+import LoadingScreen from '@/components/LoadingScreen';
 
 interface OrderData {
     id: string;
@@ -58,9 +59,7 @@ function SuccessContent() {
 
     if (loading) {
         return (
-            <div style={{ padding: '60px 0', textAlign: 'center' }}>
-                <Loader2 size={32} style={{ animation: 'spin 1s linear infinite', color: 'var(--primary)' }} />
-            </div>
+            <LoadingScreen title="สำเร็จ" subtitle="กำลังโหลดข้อมูล..." />
         );
     }
 
@@ -182,7 +181,7 @@ function SuccessContent() {
 
 export default function OrderSuccessPage() {
     return (
-        <Suspense fallback={<div style={{ padding: '60px 0', textAlign: 'center' }}><div className="loading-spinner" /></div>}>
+        <Suspense fallback={<LoadingScreen title="สำเร็จ" subtitle="กำลังโหลด..." />}>
             <SuccessContent />
         </Suspense>
     );
